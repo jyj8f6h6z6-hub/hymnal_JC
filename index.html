@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
+
   <meta charset="UTF-8">
 
   <meta
@@ -8,34 +10,80 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   >
 
-  <title>詩歌選擇器</title>
+  <meta
+    name="theme-color"
+    content="#f8fafc"
+  >
 
-  <link rel="stylesheet" href="./style.css">
+  <title>詩歌</title>
+
+  <link
+    rel="stylesheet"
+    href="./style.css"
+  >
+
 </head>
+
 
 <body>
 
+
   <div class="app">
+
 
     <!-- =========================
          頁首
     ========================== -->
+
     <header class="header">
+
       <div>
-        <div class="eyebrow">HYMN</div>
-        <h1>詩歌</h1>
+
+        <div class="eyebrow">
+          HYMN
+        </div>
+
+        <h1>
+          詩歌
+        </h1>
+
       </div>
+
+
+      <!-- 主題切換 -->
+
+      <button
+        id="themeButton"
+        class="theme-button"
+        type="button"
+        aria-label="切換顯示主題"
+        title="切換顯示主題"
+      >
+
+        <span aria-hidden="true">
+          ◐
+        </span>
+
+        <span id="themeName">
+          灰藍
+        </span>
+
+      </button>
+
     </header>
 
 
+
     <!-- =========================
-         選擇歌本
+         選擇詩歌本
     ========================== -->
+
     <section class="book-section">
 
       <div class="section-title">
         選擇詩歌本
       </div>
+
 
       <div
         id="bookList"
@@ -45,14 +93,19 @@
     </section>
 
 
+
     <!-- =========================
-         歌號選擇
+         選擇歌號
     ========================== -->
+
     <section class="number-section">
+
 
       <div class="number-header">
 
+
         <div>
+
           <div class="section-title">
             選擇歌號
           </div>
@@ -61,25 +114,42 @@
             id="currentBookName"
             class="current-book-name"
           >
-            歌本 1
+            詩歌本
           </div>
+
         </div>
+
 
         <div
           id="numberDisplay"
           class="number-display"
+          aria-live="polite"
         >
           0001
         </div>
 
+
       </div>
 
 
-      <!-- 四位數滾輪 -->
+
+      <!-- =========================
+           四位數滾輪
+      ========================== -->
+
       <div class="wheel-panel">
 
-        <div class="selection-window"></div>
 
+        <!-- 中央選取框 -->
+
+        <div
+          class="selection-window"
+          aria-hidden="true"
+        ></div>
+
+
+
+        <!-- 千位 -->
 
         <div class="wheel-column">
 
@@ -88,6 +158,7 @@
             class="wheel"
             data-place="1000"
             tabindex="0"
+            aria-label="千位數"
           ></div>
 
           <div class="wheel-label">
@@ -97,6 +168,9 @@
         </div>
 
 
+
+        <!-- 百位 -->
+
         <div class="wheel-column">
 
           <div
@@ -104,6 +178,7 @@
             class="wheel"
             data-place="100"
             tabindex="0"
+            aria-label="百位數"
           ></div>
 
           <div class="wheel-label">
@@ -113,6 +188,9 @@
         </div>
 
 
+
+        <!-- 十位 -->
+
         <div class="wheel-column">
 
           <div
@@ -120,6 +198,7 @@
             class="wheel"
             data-place="10"
             tabindex="0"
+            aria-label="十位數"
           ></div>
 
           <div class="wheel-label">
@@ -129,6 +208,9 @@
         </div>
 
 
+
+        <!-- 個位 -->
+
         <div class="wheel-column">
 
           <div
@@ -136,6 +218,7 @@
             class="wheel"
             data-place="1"
             tabindex="0"
+            aria-label="個位數"
           ></div>
 
           <div class="wheel-label">
@@ -144,25 +227,35 @@
 
         </div>
 
+
       </div>
 
+
     </section>
+
 
 
     <!-- =========================
          詩歌顯示
     ========================== -->
+
     <main
       id="hymnArea"
       class="hymn-area"
     >
+
+
+      <!-- 初始畫面 -->
 
       <div
         id="emptyState"
         class="empty-state"
       >
 
-        <div class="empty-icon">
+        <div
+          class="empty-icon"
+          aria-hidden="true"
+        >
           ♫
         </div>
 
@@ -171,18 +264,23 @@
         </div>
 
         <div class="empty-text">
-          滑動上方數字滾輪選擇歌號
+          選擇詩歌本，再滑動數字滾輪
         </div>
 
       </div>
 
+
+
+      <!-- 詩歌 -->
 
       <article
         id="hymnCard"
         class="hymn-card hidden"
       >
 
+
         <div class="hymn-top">
+
 
           <div>
 
@@ -198,15 +296,19 @@
 
           </div>
 
+
           <div
             id="hymnNumber"
             class="hymn-number"
           ></div>
 
+
         </div>
 
 
+
         <div class="divider"></div>
+
 
 
         <div
@@ -214,15 +316,22 @@
           class="hymn-lyrics"
         ></div>
 
+
       </article>
 
+
+
+      <!-- 找不到 -->
 
       <div
         id="notFound"
         class="not-found hidden"
       >
 
-        <div class="not-found-number" id="notFoundNumber">
+        <div
+          id="notFoundNumber"
+          class="not-found-number"
+        >
           0000
         </div>
 
@@ -236,17 +345,25 @@
 
       </div>
 
+
     </main>
+
 
   </div>
 
 
-  <!--
-    hymns.js 必須先載入
-    app.js 才能使用 hymns 資料
-  -->
+
+  <!-- =========================
+       JS
+
+       hymns.js 必須先載入
+  ========================== -->
+
   <script src="./hymns.js"></script>
+
   <script src="./app.js"></script>
 
+
 </body>
+
 </html>

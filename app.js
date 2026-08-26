@@ -1,43 +1,66 @@
 "use strict";
 
 
-/* =========================================
+/* =========================================================
    基本設定
-========================================= */
+========================================================= */
 
 
 /*
-  hymns.js 裡面的資料格式：
-
-  {
-    book: 1,
-    code: 1,
-    title: "...",
-    lyrics: "...",
-    favorite: 0
-  }
-
-  所以新版只需要依照：
-
-  book + code
-
-  找出指定詩歌。
+  CSS 每一格高度也是 70px。
+  如果之後修改 CSS 的 wheel-option 高度，
+  這裡也必須一起修改。
 */
-
 
 const ITEM_HEIGHT = 70;
-const SNAP_DELAY = 55;
-const REPEAT_COUNT = 5;
-const MIDDLE_SET = 2;
+
 
 /*
-  歌本名稱目前先暫時使用「歌本 1～6」。
-
-  之後知道正式名稱後，
-  只需要改這裡即可。
-
-  icon 也可以之後換成圖片。
+  使用者停止滑動後多久進行吸附。
 */
+
+const SNAP_DELAY = 55;
+
+
+/*
+  每個滾輪實際建立 5 組 0～9。
+
+  使用者看到像無限循環：
+
+  8
+  9
+  0
+  1
+  2
+*/
+
+const REPEAT_COUNT = 5;
+
+
+/*
+  一開始放在第 3 組，
+  也就是中間位置。
+*/
+
+const MIDDLE_SET = 2;
+
+
+/*
+  滾輪停穩後，
+  稍微延遲再載入詩歌。
+
+  目的是：
+  滾輪歸滾輪，
+  詩歌載入歸詩歌。
+*/
+
+const HYMN_LOAD_DELAY = 180;
+
+
+
+/* =========================================================
+   詩歌本
+========================================================= */
 
 const BOOKS = [
 
@@ -82,31 +105,97 @@ const BOOKS = [
 ];
 
 
-/* =========================================
+
+/* =========================================================
+   主題
+========================================================= */
+
+const THEMES = [
+
+  {
+    id: "default",
+    name: "灰藍",
+    themeColor: "#f8fafc"
+  },
+
+  {
+    id: "paper",
+    name: "米白",
+    themeColor: "#f8f4ec"
+  },
+
+  {
+    id: "green",
+    name: "護眼",
+    themeColor: "#f3f7f2"
+  },
+
+  {
+    id: "pink",
+    name: "暖粉",
+    themeColor: "#fbf5f4"
+  },
+
+  {
+    id: "dark",
+    name: "夜間",
+    themeColor: "#171b20"
+  }
+
+];
+
+
+let currentThemeIndex = 0;
+
+
+
+/* =========================================================
    DOM
-========================================= */
+========================================================= */
 
 const bookList =
-  document.getElementById("bookList");
+  document.getElementById(
+    "bookList"
+  );
+
 
 const currentBookName =
-  document.getElementById("currentBookName");
+  document.getElementById(
+    "currentBookName"
+  );
+
 
 const numberDisplay =
-  document.getElementById("numberDisplay");
+  document.getElementById(
+    "numberDisplay"
+  );
 
+
+
+/* 滾輪 */
 
 const wheelThousands =
-  document.getElementById("wheelThousands");
+  document.getElementById(
+    "wheelThousands"
+  );
+
 
 const wheelHundreds =
-  document.getElementById("wheelHundreds");
+  document.getElementById(
+    "wheelHundreds"
+  );
+
 
 const wheelTens =
-  document.getElementById("wheelTens");
+  document.getElementById(
+    "wheelTens"
+  );
+
 
 const wheelOnes =
-  document.getElementById("wheelOnes");
+  document.getElementById(
+    "wheelOnes"
+  );
 
 
 const wheels = [
@@ -119,62 +208,143 @@ const wheels = [
 ];
 
 
+
+/* 詩歌區 */
+
 const emptyState =
-  document.getElementById("emptyState");
+  document.getElementById(
+    "emptyState"
+  );
+
 
 const hymnCard =
-  document.getElementById("hymnCard");
+  document.getElementById(
+    "hymnCard"
+  );
+
 
 const notFound =
-  document.getElementById("notFound");
+  document.getElementById(
+    "notFound"
+  );
 
 
 const hymnBook =
-  document.getElementById("hymnBook");
+  document.getElementById(
+    "hymnBook"
+  );
+
 
 const hymnTitle =
-  document.getElementById("hymnTitle");
+  document.getElementById(
+    "hymnTitle"
+  );
+
 
 const hymnNumber =
-  document.getElementById("hymnNumber");
+  document.getElementById(
+    "hymnNumber"
+  );
+
 
 const hymnLyrics =
-  document.getElementById("hymnLyrics");
+  document.getElementById(
+    "hymnLyrics"
+  );
+
 
 const notFoundNumber =
-  document.getElementById("notFoundNumber");
+  document.getElementById(
+    "notFoundNumber"
+  );
 
 
-/* =========================================
+
+/* 主題 */
+
+const themeButton =
+  document.getElementById(
+    "themeButton"
+  );
+
+
+const themeName =
+  document.getElementById(
+    "themeName"
+  );
+
+
+
+/* =========================================================
    APP 狀態
-========================================= */
+========================================================= */
+
+
+/*
+  預設：
+  詩歌本
+*/
 
 let selectedBook = 1;
 
 
 /*
-  預設第 1 首
-
+  預設歌號：
   0001
 */
 
 let selectedDigits = [
+
   0,
   0,
   0,
   1
+
 ];
 
 
-let scrollTimers =
+/*
+  每一個滾輪自己的停止計時器。
+*/
+
+const scrollTimers =
   new WeakMap();
 
 
-/* =========================================
-   資料庫索引
+/*
+  詩歌載入 debounce。
+*/
 
-   建立 Map 可以讓查歌速度非常快。
-========================================= */
+let hymnLoadTimer = null;
+
+
+
+/* =========================================================
+   建立詩歌索引
+========================================================= */
+
+
+/*
+  hymns.js 本身是一個大型陣列。
+
+  每筆資料：
+
+  {
+    book: 1,
+    code: 1,
+    title: "...",
+    lyrics: "..."
+  }
+
+
+  我們先轉成 Map：
+
+  "1-101"
+  "2-35"
+  "5-442"
+
+  之後查歌就很快。
+*/
 
 const hymnIndex =
   new Map();
@@ -182,26 +352,47 @@ const hymnIndex =
 
 function buildHymnIndex() {
 
+
   if (
     typeof hymns === "undefined" ||
     !Array.isArray(hymns)
   ) {
 
     console.error(
-      "找不到 hymns.js 或 hymns 不是陣列"
+      "找不到 hymns.js，或 hymns 不是陣列。"
     );
 
     return;
+
   }
+
+
+  hymnIndex.clear();
 
 
   for (const hymn of hymns) {
 
+
     const book =
-      Number(hymn.book);
+      Number(
+        hymn.book
+      );
+
 
     const code =
-      Number(hymn.code);
+      Number(
+        hymn.code
+      );
+
+
+    if (
+      !Number.isFinite(book) ||
+      !Number.isFinite(code)
+    ) {
+
+      continue;
+
+    }
 
 
     const key =
@@ -223,125 +414,352 @@ function buildHymnIndex() {
 }
 
 
-/* =========================================
-   歌本 UI
-========================================= */
 
-function createBookButtons() {
+/* =========================================================
+   主題
+========================================================= */
 
-  bookList.innerHTML = "";
-
-
-  BOOKS.forEach(book => {
-
-    const button =
-      document.createElement("button");
+function applyTheme(index) {
 
 
-    button.type =
-      "button";
+  /*
+    保證永遠在有效範圍。
+  */
+
+  currentThemeIndex =
+    (
+      index +
+      THEMES.length
+    ) %
+    THEMES.length;
 
 
-    button.className =
-      "book-button";
+  const theme =
+    THEMES[
+      currentThemeIndex
+    ];
 
 
-    button.dataset.book =
-      String(book.id);
+  /*
+    default 不需要 data-theme。
+  */
+
+  if (
+    theme.id === "default"
+  ) {
+
+    document.body.removeAttribute(
+      "data-theme"
+    );
+
+  }
+
+  else {
+
+    document.body.dataset.theme =
+      theme.id;
+
+  }
 
 
-    const coverContent = book.image
-  ? `
-      <img
-        class="book-cover-image"
-        src="${book.image}"
-        alt="${book.name}"
-      >
-    `
-  : `
-      <div class="book-text-cover">
-        ${book.textIcon}
-      </div>
-    `;
+  /*
+    更新按鈕文字。
+  */
+
+  if (themeName) {
+
+    themeName.textContent =
+      theme.name;
+
+  }
 
 
-    button.innerHTML = `
-    <div class="book-cover">
-        ${coverContent}
-    </div>
+  /*
+    更新瀏覽器 toolbar 顏色。
+  */
 
-    <div class="book-name">
-        ${book.name}
-    </div>
-    `;
-
-
-    if (
-      book.id === selectedBook
-    ) {
-
-      button.classList.add(
-        "active"
-      );
-
-    }
-
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        selectBook(
-          book.id
-        );
-
-      }
+  const themeMeta =
+    document.querySelector(
+      'meta[name="theme-color"]'
     );
 
 
-    bookList.appendChild(
-      button
+  if (themeMeta) {
+
+    themeMeta.setAttribute(
+      "content",
+      theme.themeColor
     );
 
-  });
+  }
+
+
+  /*
+    儲存使用者偏好。
+  */
+
+  try {
+
+    localStorage.setItem(
+      "hymnalTheme",
+      theme.id
+    );
+
+  }
+
+  catch (error) {
+
+    /*
+      localStorage 被封鎖時，
+      主題仍然可以正常使用。
+    */
+
+  }
 
 }
 
 
-/* =========================================
+
+function loadSavedTheme() {
+
+
+  let savedTheme = null;
+
+
+  try {
+
+    savedTheme =
+      localStorage.getItem(
+        "hymnalTheme"
+      );
+
+  }
+
+  catch (error) {
+
+    savedTheme = null;
+
+  }
+
+
+  const savedIndex =
+    THEMES.findIndex(
+      theme =>
+        theme.id === savedTheme
+    );
+
+
+  applyTheme(
+    savedIndex >= 0
+      ? savedIndex
+      : 0
+  );
+
+}
+
+
+
+function setupThemeButton() {
+
+
+  if (!themeButton) {
+
+    return;
+
+  }
+
+
+  themeButton.addEventListener(
+    "click",
+    () => {
+
+
+      const nextTheme =
+        (
+          currentThemeIndex + 1
+        ) %
+        THEMES.length;
+
+
+      applyTheme(
+        nextTheme
+      );
+
+    }
+  );
+
+}
+
+
+
+/* =========================================================
+   建立歌本按鈕
+========================================================= */
+
+function createBookButtons() {
+
+
+  bookList.innerHTML = "";
+
+
+  BOOKS.forEach(
+    book => {
+
+
+      const button =
+        document.createElement(
+          "button"
+        );
+
+
+      button.type =
+        "button";
+
+
+      button.className =
+        "book-button";
+
+
+      button.dataset.book =
+        String(
+          book.id
+        );
+
+
+      button.setAttribute(
+        "aria-label",
+        `選擇${book.name}`
+      );
+
+
+      /*
+        有圖片：
+        顯示書封。
+
+        沒圖片：
+        紅本 / 藍本暫時用文字。
+      */
+
+      const coverContent =
+        book.image
+
+          ? `
+              <img
+                class="book-cover-image"
+                src="${book.image}"
+                alt="${book.name}"
+              >
+            `
+
+          : `
+              <div class="book-text-cover">
+                ${book.textIcon}
+              </div>
+            `;
+
+
+      button.innerHTML = `
+
+        <div class="book-cover">
+          ${coverContent}
+        </div>
+
+        <div class="book-name">
+          ${book.name}
+        </div>
+
+      `;
+
+
+      if (
+        book.id ===
+        selectedBook
+      ) {
+
+        button.classList.add(
+          "active"
+        );
+
+      }
+
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          selectBook(
+            book.id
+          );
+
+        }
+      );
+
+
+      bookList.appendChild(
+        button
+      );
+
+    }
+  );
+
+}
+
+
+
+/* =========================================================
    選擇歌本
-========================================= */
+========================================================= */
 
 function selectBook(bookId) {
 
+
   selectedBook =
-    Number(bookId);
+    Number(
+      bookId
+    );
 
 
   document
     .querySelectorAll(
       ".book-button"
     )
-    .forEach(button => {
+    .forEach(
+      button => {
 
-      const buttonBook =
-        Number(
-          button.dataset.book
+
+        const buttonBook =
+          Number(
+            button.dataset.book
+          );
+
+
+        const active =
+          buttonBook ===
+          selectedBook;
+
+
+        button.classList.toggle(
+          "active",
+          active
         );
 
 
-      button.classList.toggle(
-        "active",
-        buttonBook === selectedBook
-      );
+        button.setAttribute(
+          "aria-pressed",
+          active
+            ? "true"
+            : "false"
+        );
 
-    });
+      }
+    );
 
 
   const book =
     BOOKS.find(
       item =>
-        item.id === selectedBook
+        item.id ===
+        selectedBook
     );
 
 
@@ -352,236 +770,549 @@ function selectBook(bookId) {
 
 
   /*
-    切換歌本後
-    立即查目前歌號
+    換歌本後，
+    不影響滾輪。
+
+    直接用目前歌號重新查歌。
   */
 
-  updateHymn();
+  scheduleHymnUpdate();
 
 }
 
 
-/* =========================================
-   建立數字滾輪
-========================================= */
 
-function createWheel(wheel, initialValue) {
+/* =========================================================
+   建立數字滾輪
+========================================================= */
+
+function createWheel(
+  wheel,
+  initialValue
+) {
+
 
   wheel.innerHTML = "";
 
-  const topPadding = document.createElement("div");
-  topPadding.className = "wheel-padding";
-  wheel.appendChild(topPadding);
 
-  for (let set = 0; set < REPEAT_COUNT; set++) {
+  /*
+    上方留白。
 
-    for (let number = 0; number <= 9; number++) {
+    讓第一個數字可以停在中央。
+  */
 
-      const option = document.createElement("div");
+  const topPadding =
+    document.createElement(
+      "div"
+    );
 
-      option.className = "wheel-option";
-      option.dataset.value = String(number);
-      option.textContent = String(number);
 
-      wheel.appendChild(option);
+  topPadding.className =
+    "wheel-padding";
+
+
+  wheel.appendChild(
+    topPadding
+  );
+
+
+
+  /*
+    建立多組 0～9。
+  */
+
+  for (
+    let set = 0;
+    set < REPEAT_COUNT;
+    set++
+  ) {
+
+
+    for (
+      let number = 0;
+      number <= 9;
+      number++
+    ) {
+
+
+      const option =
+        document.createElement(
+          "div"
+        );
+
+
+      option.className =
+        "wheel-option";
+
+
+      option.dataset.value =
+        String(
+          number
+        );
+
+
+      option.textContent =
+        String(
+          number
+        );
+
+
+      wheel.appendChild(
+        option
+      );
+
     }
+
   }
 
-  const bottomPadding = document.createElement("div");
-  bottomPadding.className = "wheel-padding";
-  wheel.appendChild(bottomPadding);
 
-  requestAnimationFrame(() => {
 
-    const initialIndex =
-      MIDDLE_SET * 10 + initialValue;
+  /*
+    下方留白。
+  */
 
-    wheel.scrollTop =
-      initialIndex * ITEM_HEIGHT;
-
-    updateWheelVisual(
-      wheel,
-      initialValue
+  const bottomPadding =
+    document.createElement(
+      "div"
     );
-  });
+
+
+  bottomPadding.className =
+    "wheel-padding";
+
+
+  wheel.appendChild(
+    bottomPadding
+  );
+
+
+
+  /*
+    一開始直接移到中間那一組。
+  */
+
+  requestAnimationFrame(
+    () => {
+
+
+      const initialIndex =
+        MIDDLE_SET * 10 +
+        initialValue;
+
+
+      wheel.scrollTop =
+        initialIndex *
+        ITEM_HEIGHT;
+
+
+      updateWheelVisual(
+        wheel,
+        initialValue
+      );
+
+    }
+  );
+
+
+
+  /*
+    滾動。
+  */
 
   wheel.addEventListener(
     "scroll",
     () => {
-      handleWheelScroll(wheel);
+
+      handleWheelScroll(
+        wheel
+      );
+
     },
-    { passive: true }
+    {
+      passive: true
+    }
   );
+
+
+
+  /*
+    鍵盤 ↑ ↓。
+  */
 
   wheel.addEventListener(
     "keydown",
     event => {
 
-      if (event.key === "ArrowUp") {
+
+      if (
+        event.key ===
+        "ArrowUp"
+      ) {
+
         event.preventDefault();
-        stepWheel(wheel, -1);
+
+        stepWheel(
+          wheel,
+          -1
+        );
+
       }
 
-      if (event.key === "ArrowDown") {
+
+      if (
+        event.key ===
+        "ArrowDown"
+      ) {
+
         event.preventDefault();
-        stepWheel(wheel, 1);
+
+        stepWheel(
+          wheel,
+          1
+        );
+
       }
+
     }
   );
+
 }
 
 
-/* =========================================
-   滾輪上下移動
-========================================= */
 
-function stepWheel(wheel, direction) {
+/* =========================================================
+   鍵盤移動一格
+========================================================= */
+
+function stepWheel(
+  wheel,
+  direction
+) {
+
 
   const index =
     Math.round(
-      wheel.scrollTop / ITEM_HEIGHT
+      wheel.scrollTop /
+      ITEM_HEIGHT
     );
 
+
   const newIndex =
-    index + direction;
+    index +
+    direction;
+
 
   wheel.scrollTo({
-    top: newIndex * ITEM_HEIGHT,
-    behavior: "smooth"
+
+    top:
+      newIndex *
+      ITEM_HEIGHT,
+
+    behavior:
+      "smooth"
+
   });
+
 }
 
 
-/* =========================================
-   滾動中
-========================================= */
 
-function handleWheelScroll(wheel) {
+/* =========================================================
+   滾輪正在滑動
+========================================================= */
 
-  const value = getWheelValue(wheel);
+function handleWheelScroll(
+  wheel
+) {
+
+
+  const value =
+    getWheelValue(
+      wheel
+    );
+
+
+  /*
+    只更新滾輪視覺。
+  */
 
   updateWheelVisual(
     wheel,
     value
   );
 
-  const wheelIndex =
-    wheels.indexOf(wheel);
 
-  if (wheelIndex !== -1) {
-    selectedDigits[wheelIndex] = value;
+  /*
+    更新這一位數的狀態。
+  */
+
+  const wheelIndex =
+    wheels.indexOf(
+      wheel
+    );
+
+
+  if (
+    wheelIndex !== -1
+  ) {
+
+    selectedDigits[
+      wheelIndex
+    ] = value;
+
   }
+
+
+  /*
+    即時更新 4 位數。
+
+    這很輕量，
+    不會載入詩歌。
+  */
 
   numberDisplay.textContent =
     formatNumber(
       getSelectedNumber()
     );
 
+
+  /*
+    清除上一個吸附計時。
+  */
+
   const oldTimer =
-    scrollTimers.get(wheel);
+    scrollTimers.get(
+      wheel
+    );
+
 
   if (oldTimer) {
-    clearTimeout(oldTimer);
+
+    clearTimeout(
+      oldTimer
+    );
+
   }
 
+
+  /*
+    停止滑動後才吸附。
+  */
+
   const timer =
-    setTimeout(() => {
+    setTimeout(
+      () => {
 
-      snapWheel(wheel);
+        snapWheel(
+          wheel
+        );
 
-    }, SNAP_DELAY);
+      },
+      SNAP_DELAY
+    );
+
 
   scrollTimers.set(
     wheel,
     timer
   );
+
 }
 
 
-/* =========================================
-   吸附
-========================================= */
 
-function snapWheel(wheel) {
+/* =========================================================
+   滾輪吸附
+========================================================= */
 
-  let index =
+function snapWheel(
+  wheel
+) {
+
+
+  const index =
     Math.round(
-      wheel.scrollTop / ITEM_HEIGHT
+      wheel.scrollTop /
+      ITEM_HEIGHT
     );
 
-  const value =
-    (index % 10 + 10) % 10;
 
-  wheel.scrollTo({
-    top: index * ITEM_HEIGHT,
-    behavior: "smooth"
-  });
+  const value =
+    normalizeWheelValue(
+      index
+    );
+
+
+  const target =
+    index *
+    ITEM_HEIGHT;
+
+
+  /*
+    已經非常接近中央時，
+    不再開 smooth 動畫。
+
+    避免畫面輕微抖動。
+  */
+
+  if (
+    Math.abs(
+      wheel.scrollTop -
+      target
+    ) < 2
+  ) {
+
+    wheel.scrollTop =
+      target;
+
+  }
+
+  else {
+
+    wheel.scrollTo({
+
+      top: target,
+
+      behavior: "smooth"
+
+    });
+
+  }
+
+
+  /*
+    記錄值。
+  */
 
   const wheelIndex =
-    wheels.indexOf(wheel);
+    wheels.indexOf(
+      wheel
+    );
 
-  if (wheelIndex !== -1) {
-    selectedDigits[wheelIndex] = value;
+
+  if (
+    wheelIndex !== -1
+  ) {
+
+    selectedDigits[
+      wheelIndex
+    ] = value;
+
   }
+
 
   updateWheelVisual(
     wheel,
     value
   );
 
-  setTimeout(() => {
 
-    /*
-      如果滑到太上面或太下面，
-      偷偷把位置搬回中間那組。
+  /*
+    等吸附動作完成後，
+    再處理循環位置。
 
-      因為數字完全一樣，
-      使用者看不出來。
-    */
+    如果太靠近頂端或底端，
+    偷偷搬回中間。
 
-    if (
-      index < 10 ||
-      index >= (REPEAT_COUNT - 1) * 10
-    ) {
+    使用者看到的數字完全一樣，
+    所以不會發現。
+  */
 
-      const newIndex =
-        MIDDLE_SET * 10 + value;
+  setTimeout(
+    () => {
 
-      wheel.scrollTop =
-        newIndex * ITEM_HEIGHT;
-    }
 
-    updateHymn();
+      if (
+        index < 10 ||
+        index >=
+          (
+            REPEAT_COUNT - 1
+          ) * 10
+      ) {
 
-  }, 100);
+
+        const middleIndex =
+          MIDDLE_SET * 10 +
+          value;
+
+
+        wheel.scrollTop =
+          middleIndex *
+          ITEM_HEIGHT;
+
+      }
+
+
+      /*
+        到這裡才通知：
+        可以準備載入詩歌。
+
+        滾輪操作和歌詞載入完全分開。
+      */
+
+      scheduleHymnUpdate();
+
+
+    },
+    110
+  );
+
 }
 
 
-/* =========================================
-   取得滾輪目前數字
-========================================= */
 
-function getWheelValue(wheel) {
+/* =========================================================
+   將滾輪位置轉成 0～9
+========================================================= */
+
+function normalizeWheelValue(
+  index
+) {
+
+
+  return (
+    (
+      index % 10
+    ) + 10
+  ) % 10;
+
+}
+
+
+
+/* =========================================================
+   取得單一滾輪的值
+========================================================= */
+
+function getWheelValue(
+  wheel
+) {
+
 
   const index =
     Math.round(
-      wheel.scrollTop / ITEM_HEIGHT
+      wheel.scrollTop /
+      ITEM_HEIGHT
     );
 
-  return (
-    (index % 10 + 10) % 10
+
+  return normalizeWheelValue(
+    index
   );
+
 }
 
 
-/* =========================================
-   滾輪視覺
-========================================= */
+
+/* =========================================================
+   滾輪選中樣式
+========================================================= */
 
 function updateWheelVisual(
   wheel,
   selectedValue
 ) {
+
 
   const options =
     wheel.querySelectorAll(
@@ -592,6 +1323,7 @@ function updateWheelVisual(
   options.forEach(
     option => {
 
+
       const value =
         Number(
           option.dataset.value
@@ -600,7 +1332,8 @@ function updateWheelVisual(
 
       option.classList.toggle(
         "selected",
-        value === selectedValue
+        value ===
+        selectedValue
       );
 
     }
@@ -609,11 +1342,18 @@ function updateWheelVisual(
 }
 
 
-/* =========================================
-   取得四位數歌號
-========================================= */
+
+/* =========================================================
+   取得目前四位數
+========================================================= */
 
 function getSelectedNumber() {
+
+
+  /*
+    直接讀四個滾輪，
+    保證畫面跟實際數字一致。
+  */
 
   const thousands =
     getWheelValue(
@@ -659,17 +1399,15 @@ function getSelectedNumber() {
 }
 
 
-/* =========================================
-   格式化四位數
 
-   1 → 0001
-   25 → 0025
-   123 → 0123
-========================================= */
+/* =========================================================
+   四位數顯示
+========================================================= */
 
 function formatNumber(
   number
 ) {
+
 
   return String(
     number
@@ -681,14 +1419,97 @@ function formatNumber(
 }
 
 
-/* =========================================
-   查詢詩歌
-========================================= */
+
+/* =========================================================
+   詩歌載入排程
+========================================================= */
+
+function scheduleHymnUpdate() {
+
+
+  /*
+    如果使用者又滑了，
+    前一個準備載入的詩歌取消。
+  */
+
+  if (
+    hymnLoadTimer
+  ) {
+
+    clearTimeout(
+      hymnLoadTimer
+    );
+
+  }
+
+
+  hymnLoadTimer =
+    setTimeout(
+      () => {
+
+
+        /*
+          優先等瀏覽器空閒時處理。
+
+          這樣比較不會干擾滾輪動畫。
+        */
+
+        if (
+          "requestIdleCallback"
+          in window
+        ) {
+
+
+          requestIdleCallback(
+            () => {
+
+              updateHymn();
+
+            },
+            {
+              timeout: 350
+            }
+          );
+
+        }
+
+        else {
+
+
+          /*
+            Safari 等不支援
+            requestIdleCallback 的瀏覽器。
+          */
+
+          setTimeout(
+            () => {
+
+              updateHymn();
+
+            },
+            0
+          );
+
+        }
+
+
+      },
+      HYMN_LOAD_DELAY
+    );
+
+}
+
+
+
+/* =========================================================
+   找詩歌
+========================================================= */
 
 function findHymn(
   book,
   code
 ) {
+
 
   const key =
     `${book}-${code}`;
@@ -703,11 +1524,13 @@ function findHymn(
 }
 
 
-/* =========================================
-   更新詩歌
-========================================= */
+
+/* =========================================================
+   更新目前詩歌
+========================================================= */
 
 function updateHymn() {
+
 
   const code =
     getSelectedNumber();
@@ -719,16 +1542,12 @@ function updateHymn() {
     );
 
 
-  /*
-    更新畫面右上方歌號
-  */
-
   numberDisplay.textContent =
     formattedNumber;
 
 
   /*
-    0000 不查歌
+    0000 不代表有效詩歌。
   */
 
   if (
@@ -740,6 +1559,7 @@ function updateHymn() {
     );
 
     return;
+
   }
 
 
@@ -757,6 +1577,7 @@ function updateHymn() {
     );
 
     return;
+
   }
 
 
@@ -767,13 +1588,15 @@ function updateHymn() {
 }
 
 
-/* =========================================
+
+/* =========================================================
    顯示詩歌
-========================================= */
+========================================================= */
 
 function showHymn(
   hymn
 ) {
+
 
   emptyState.classList.add(
     "hidden"
@@ -794,7 +1617,9 @@ function showHymn(
     BOOKS.find(
       item =>
         item.id ===
-        Number(hymn.book)
+        Number(
+          hymn.book
+        )
     );
 
 
@@ -805,34 +1630,49 @@ function showHymn(
 
 
   hymnTitle.textContent =
-    hymn.title || "未命名詩歌";
+    hymn.title
+      ? String(
+          hymn.title
+        ).trim()
+      : "未命名詩歌";
 
 
   hymnNumber.textContent =
-    `#${hymn.code}`;
+    `第 ${hymn.code} 首`;
 
 
-  hymnLyrics.textContent =
+  /*
+    先整理歌詞，
+    再於下一個畫面更新週期放進 DOM。
+  */
+
+  const lyrics =
     cleanLyrics(
       hymn
     );
 
+
+  requestAnimationFrame(
+    () => {
+
+      hymnLyrics.textContent =
+        lyrics;
+
+    }
+  );
+
 }
 
 
-/* =========================================
+
+/* =========================================================
    清理歌詞
-
-   因為資料庫的 lyrics 第一行
-   很多時候與 title 相同。
-
-   如果第一行就是標題，
-   顯示時把重複標題拿掉。
-========================================= */
+========================================================= */
 
 function cleanLyrics(
   hymn
 ) {
+
 
   let lyrics =
     String(
@@ -866,13 +1706,17 @@ function cleanLyrics(
 
 
   /*
-    如果第一行等於 title
-    移除第一行。
+    很多資料的 lyrics 第一行
+    本身又寫一次 title。
+
+    如果完全相同，
+    就把重複標題拿掉。
   */
 
   if (
     lines.length > 0 &&
-    lines[0].trim() === title
+    lines[0].trim() ===
+      title
   ) {
 
     lines.shift();
@@ -881,19 +1725,23 @@ function cleanLyrics(
 
 
   return lines
-    .join("\n")
+    .join(
+      "\n"
+    )
     .trim();
 
 }
 
 
-/* =========================================
+
+/* =========================================================
    找不到詩歌
-========================================= */
+========================================================= */
 
 function showNotFound(
   number
 ) {
+
 
   emptyState.classList.add(
     "hidden"
@@ -916,31 +1764,49 @@ function showNotFound(
 }
 
 
-/* =========================================
+
+/* =========================================================
    初始化
-========================================= */
+========================================================= */
 
 function init() {
 
+
   /*
     1.
-    建立 hymns 查詢索引
+    載入上次使用的主題。
+  */
+
+  loadSavedTheme();
+
+
+  /*
+    2.
+    主題按鈕。
+  */
+
+  setupThemeButton();
+
+
+  /*
+    3.
+    建立詩歌索引。
   */
 
   buildHymnIndex();
 
 
   /*
-    2.
-    建立歌本按鈕
+    4.
+    建立歌本。
   */
 
   createBookButtons();
 
 
   /*
-    3.
-    建立四個滾輪
+    5.
+    建立四個循環滾輪。
   */
 
   createWheel(
@@ -968,8 +1834,8 @@ function init() {
 
 
   /*
-    4.
-    初始歌本名稱
+    6.
+    預設歌本名稱。
   */
 
   const book =
@@ -987,26 +1853,27 @@ function init() {
 
 
   /*
-    5.
-    等滾輪位置設定完成後
-    顯示第一首
+    7.
+    等滾輪初始位置放好後，
+    顯示第 1 首。
   */
 
   setTimeout(
     () => {
 
-      updateHymn();
+      scheduleHymnUpdate();
 
     },
-    100
+    180
   );
 
 }
 
 
-/* =========================================
+
+/* =========================================================
    啟動
-========================================= */
+========================================================= */
 
 document.addEventListener(
   "DOMContentLoaded",
