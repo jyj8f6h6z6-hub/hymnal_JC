@@ -27,7 +27,8 @@
 
 const ITEM_HEIGHT = 70;
 const SNAP_DELAY = 55;
-
+const REPEAT_COUNT = 5;
+const MIDDLE_SET = 2;
 
 /*
   歌本名稱目前先暫時使用「歌本 1～6」。
@@ -364,161 +365,69 @@ function selectBook(bookId) {
    建立數字滾輪
 ========================================= */
 
-function createWheel(
-  wheel,
-  initialValue
-) {
+function createWheel(wheel, initialValue) {
 
   wheel.innerHTML = "";
 
+  const topPadding = document.createElement("div");
+  topPadding.className = "wheel-padding";
+  wheel.appendChild(topPadding);
 
-  /*
-    上方留白
+  for (let set = 0; set < REPEAT_COUNT; set++) {
 
-    讓數字 0 可以停在中央。
-  */
+    for (let number = 0; number <= 9; number++) {
 
-  const topPadding =
-    document.createElement("div");
+      const option = document.createElement("div");
 
-  topPadding.className =
-    "wheel-padding";
+      option.className = "wheel-option";
+      option.dataset.value = String(number);
+      option.textContent = String(number);
 
-  wheel.appendChild(
-    topPadding
-  );
-
-
-  /*
-    0 ～ 9
-  */
-
-  for (
-    let number = 0;
-    number <= 9;
-    number++
-  ) {
-
-    const option =
-      document.createElement("div");
-
-
-    option.className =
-      "wheel-option";
-
-
-    option.dataset.value =
-      String(number);
-
-
-    option.textContent =
-      String(number);
-
-
-    wheel.appendChild(
-      option
-    );
-
+      wheel.appendChild(option);
+    }
   }
 
+  const bottomPadding = document.createElement("div");
+  bottomPadding.className = "wheel-padding";
+  wheel.appendChild(bottomPadding);
 
-  /*
-    下方留白
+  requestAnimationFrame(() => {
 
-    讓數字 9 也可以停在中央。
-  */
+    const initialIndex =
+      MIDDLE_SET * 10 + initialValue;
 
-  const bottomPadding =
-    document.createElement("div");
+    wheel.scrollTop =
+      initialIndex * ITEM_HEIGHT;
 
-  bottomPadding.className =
-    "wheel-padding";
-
-  wheel.appendChild(
-    bottomPadding
-  );
-
-
-  /*
-    設定初始位置
-  */
-
-  requestAnimationFrame(
-    () => {
-
-      wheel.scrollTop =
-        initialValue *
-        ITEM_HEIGHT;
-
-
-      updateWheelVisual(
-        wheel,
-        initialValue
-      );
-
-    }
-  );
-
-
-  /*
-    滾動事件
-  */
+    updateWheelVisual(
+      wheel,
+      initialValue
+    );
+  });
 
   wheel.addEventListener(
     "scroll",
     () => {
-
-      handleWheelScroll(
-        wheel
-      );
-
+      handleWheelScroll(wheel);
     },
-    {
-      passive: true
-    }
+    { passive: true }
   );
-
-
-  /*
-    鍵盤 ↑ ↓
-  */
 
   wheel.addEventListener(
     "keydown",
     event => {
 
-      if (
-        event.key ===
-        "ArrowUp"
-      ) {
-
+      if (event.key === "ArrowUp") {
         event.preventDefault();
-
-        stepWheel(
-          wheel,
-          -1
-        );
-
+        stepWheel(wheel, -1);
       }
 
-
-      if (
-        event.key ===
-        "ArrowDown"
-      ) {
-
+      if (event.key === "ArrowDown") {
         event.preventDefault();
-
-        stepWheel(
-          wheel,
-          1
-        );
-
+        stepWheel(wheel, 1);
       }
-
     }
   );
-
 }
 
 
@@ -526,42 +435,20 @@ function createWheel(
    滾輪上下移動
 ========================================= */
 
-function stepWheel(
-  wheel,
-  direction
-) {
+function stepWheel(wheel, direction) {
 
-  let value =
-    getWheelValue(
-      wheel
+  const index =
+    Math.round(
+      wheel.scrollTop / ITEM_HEIGHT
     );
 
-
-  value +=
-    direction;
-
-
-  value =
-    Math.max(
-      0,
-      Math.min(
-        9,
-        value
-      )
-    );
-
+  const newIndex =
+    index + direction;
 
   wheel.scrollTo({
-
-    top:
-      value *
-      ITEM_HEIGHT,
-
-    behavior:
-      "smooth"
-
+    top: newIndex * ITEM_HEIGHT,
+    behavior: "smooth"
   });
-
 }
 
 
@@ -617,33 +504,18 @@ function handleWheelScroll(wheel) {
 
 function snapWheel(wheel) {
 
-  const value =
-    getWheelValue(wheel);
-
-  const target =
-    value * ITEM_HEIGHT;
-
-  const distance =
-    Math.abs(
-      wheel.scrollTop - target
+  let index =
+    Math.round(
+      wheel.scrollTop / ITEM_HEIGHT
     );
 
-  /*
-    已經很接近中心時
-    不再做動畫，避免晃一下
-  */
-  if (distance < 3) {
+  const value =
+    (index % 10 + 10) % 10;
 
-    wheel.scrollTop = target;
-
-  } else {
-
-    wheel.scrollTo({
-      top: target,
-      behavior: "smooth"
-    });
-
-  }
+  wheel.scrollTo({
+    top: index * ITEM_HEIGHT,
+    behavior: "smooth"
+  });
 
   const wheelIndex =
     wheels.indexOf(wheel);
@@ -657,14 +529,31 @@ function snapWheel(wheel) {
     value
   );
 
-  /*
-    停穩後才真正查歌
-  */
   setTimeout(() => {
+
+    /*
+      如果滑到太上面或太下面，
+      偷偷把位置搬回中間那組。
+
+      因為數字完全一樣，
+      使用者看不出來。
+    */
+
+    if (
+      index < 10 ||
+      index >= (REPEAT_COUNT - 1) * 10
+    ) {
+
+      const newIndex =
+        MIDDLE_SET * 10 + value;
+
+      wheel.scrollTop =
+        newIndex * ITEM_HEIGHT;
+    }
 
     updateHymn();
 
-  }, 80);
+  }, 100);
 }
 
 
@@ -674,18 +563,13 @@ function snapWheel(wheel) {
 
 function getWheelValue(wheel) {
 
-  const rawValue =
-    wheel.scrollTop / ITEM_HEIGHT;
+  const index =
+    Math.round(
+      wheel.scrollTop / ITEM_HEIGHT
+    );
 
-  const value =
-    Math.round(rawValue);
-
-  return Math.max(
-    0,
-    Math.min(
-      9,
-      value
-    )
+  return (
+    (index % 10 + 10) % 10
   );
 }
 
