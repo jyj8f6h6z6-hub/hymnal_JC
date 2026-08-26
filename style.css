@@ -473,9 +473,21 @@ body {
 .wheel-option.selected {
   color: #101828;
 
-  font-weight: 850;
+  font-weight: 900;
 
-  transform: scale(1.08);
+  transform:
+    scale(1.14);
+
+  opacity: 1;
+}
+
+.wheel-option {
+  opacity: 0.42;
+
+  transition:
+    transform 0.12s ease,
+    opacity 0.12s ease,
+    color 0.12s ease;
 }
 
 .wheel-padding {
@@ -492,19 +504,22 @@ body {
   pointer-events: none;
 
   left: 4px;
-
   right: 4px;
 
   top: 76px;
 
   height: 70px;
 
-  border-radius: 18px;
+  border-radius: 16px;
 
-  background: #eef2f6;
+  background:
+    rgba(23, 32, 51, 0.045);
 
-  border:
-    1px solid rgba(15, 23, 42, 0.06);
+  border-top:
+    1px solid rgba(23, 32, 51, 0.08);
+
+  border-bottom:
+    1px solid rgba(23, 32, 51, 0.08);
 }
 
 
@@ -793,4 +808,28 @@ body {
     border-radius: 14px;
   }
 
+}
+
+.wheel {
+  height: 210px;
+
+  overflow-y: scroll;
+
+  scroll-snap-type: y mandatory;
+
+  overscroll-behavior-y: contain;
+
+  scroll-behavior: smooth;
+
+  scrollbar-width: none;
+
+  -ms-overflow-style: none;
+
+  touch-action: pan-y;
+
+  -webkit-overflow-scrolling: touch;
+
+  position: relative;
+
+  z-index: 2;
 }

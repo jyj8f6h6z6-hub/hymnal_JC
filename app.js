@@ -26,6 +26,7 @@
 
 
 const ITEM_HEIGHT = 70;
+const SNAP_DELAY = 55;
 
 
 /*
@@ -568,64 +569,45 @@ function stepWheel(
    滾動中
 ========================================= */
 
-function handleWheelScroll(
-  wheel
-) {
+function handleWheelScroll(wheel) {
 
-  const value =
-    getWheelValue(
-      wheel
-    );
-
+  const value = getWheelValue(wheel);
 
   updateWheelVisual(
     wheel,
     value
   );
 
+  const wheelIndex =
+    wheels.indexOf(wheel);
 
-  /*
-    清除上一個計時器
-  */
-
-  const oldTimer =
-    scrollTimers.get(
-      wheel
-    );
-
-
-  if (oldTimer) {
-
-    clearTimeout(
-      oldTimer
-    );
-
+  if (wheelIndex !== -1) {
+    selectedDigits[wheelIndex] = value;
   }
 
-
-  /*
-    使用者停止滑動約 90ms 後
-    自動吸附到最近數字
-  */
-
-  const timer =
-    setTimeout(
-      () => {
-
-        snapWheel(
-          wheel
-        );
-
-      },
-      90
+  numberDisplay.textContent =
+    formatNumber(
+      getSelectedNumber()
     );
 
+  const oldTimer =
+    scrollTimers.get(wheel);
+
+  if (oldTimer) {
+    clearTimeout(oldTimer);
+  }
+
+  const timer =
+    setTimeout(() => {
+
+      snapWheel(wheel);
+
+    }, SNAP_DELAY);
 
   scrollTimers.set(
     wheel,
     timer
   );
-
 }
 
 
@@ -633,61 +615,56 @@ function handleWheelScroll(
    吸附
 ========================================= */
 
-function snapWheel(
-  wheel
-) {
+function snapWheel(wheel) {
 
   const value =
-    getWheelValue(
-      wheel
+    getWheelValue(wheel);
+
+  const target =
+    value * ITEM_HEIGHT;
+
+  const distance =
+    Math.abs(
+      wheel.scrollTop - target
     );
-
-
-  wheel.scrollTo({
-
-    top:
-      value *
-      ITEM_HEIGHT,
-
-    behavior:
-      "smooth"
-
-  });
-
 
   /*
-    更新選擇的數字
+    已經很接近中心時
+    不再做動畫，避免晃一下
   */
+  if (distance < 3) {
 
-  const wheelIndex =
-    wheels.indexOf(
-      wheel
-    );
+    wheel.scrollTop = target;
 
+  } else {
 
-  if (
-    wheelIndex !== -1
-  ) {
-
-    selectedDigits[
-      wheelIndex
-    ] = value;
+    wheel.scrollTo({
+      top: target,
+      behavior: "smooth"
+    });
 
   }
 
+  const wheelIndex =
+    wheels.indexOf(wheel);
+
+  if (wheelIndex !== -1) {
+    selectedDigits[wheelIndex] = value;
+  }
 
   updateWheelVisual(
     wheel,
     value
   );
 
-
   /*
-    查詢詩歌
+    停穩後才真正查歌
   */
+  setTimeout(() => {
 
-  updateHymn();
+    updateHymn();
 
+  }, 80);
 }
 
 
@@ -695,16 +672,13 @@ function snapWheel(
    取得滾輪目前數字
 ========================================= */
 
-function getWheelValue(
-  wheel
-) {
+function getWheelValue(wheel) {
+
+  const rawValue =
+    wheel.scrollTop / ITEM_HEIGHT;
 
   const value =
-    Math.round(
-      wheel.scrollTop /
-      ITEM_HEIGHT
-    );
-
+    Math.round(rawValue);
 
   return Math.max(
     0,
@@ -713,7 +687,6 @@ function getWheelValue(
       value
     )
   );
-
 }
 
 
