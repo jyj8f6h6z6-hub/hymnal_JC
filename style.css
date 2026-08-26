@@ -1,0 +1,796 @@
+/* =========================
+   基本設定
+========================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Noto Sans TC",
+    "Microsoft JhengHei",
+    sans-serif;
+
+  background:
+    linear-gradient(
+      180deg,
+      #f8fafc 0%,
+      #eef2f7 100%
+    );
+
+  color: #172033;
+
+  min-height: 100vh;
+}
+
+
+/* =========================
+   APP
+========================= */
+
+.app {
+  width: min(100%, 900px);
+
+  margin: 0 auto;
+
+  padding:
+    max(24px, env(safe-area-inset-top))
+    18px
+    max(60px, env(safe-area-inset-bottom));
+}
+
+
+/* =========================
+   頁首
+========================= */
+
+.header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 30px;
+}
+
+.eyebrow {
+  font-size: 12px;
+
+  font-weight: 800;
+
+  letter-spacing: 4px;
+
+  color: #718096;
+
+  margin-bottom: 5px;
+}
+
+.header h1 {
+  margin: 0;
+
+  font-size: clamp(30px, 6vw, 46px);
+
+  line-height: 1;
+
+  letter-spacing: -1px;
+}
+
+
+/* =========================
+   區塊
+========================= */
+
+.book-section,
+.number-section {
+  background: rgba(255, 255, 255, 0.86);
+
+  border: 1px solid rgba(255, 255, 255, 0.9);
+
+  border-radius: 24px;
+
+  padding: 20px;
+
+  margin-bottom: 18px;
+
+  box-shadow:
+    0 12px 35px rgba(15, 23, 42, 0.07);
+}
+
+.section-title {
+  font-size: 14px;
+
+  font-weight: 800;
+
+  color: #667085;
+
+  letter-spacing: 0.5px;
+}
+
+
+/* =========================
+   歌本
+========================= */
+
+/* =========================
+   歌本選擇區
+========================= */
+
+.book-list {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+
+  margin-top: 16px;
+
+  width: 100%;
+}
+
+
+/* 每一本歌本按鈕 */
+
+.book-button {
+  appearance: none;
+
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+
+  border-radius: 16px;
+
+  padding: 10px 6px;
+
+  min-width: 0;
+
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: flex-start;
+
+  gap: 8px;
+
+  overflow: hidden;
+
+  font-family: inherit;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+
+.book-button:hover {
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+
+/* 被選中的歌本 */
+
+.book-button.active {
+  border: 2px solid #172033;
+
+  background: #f8fafc;
+
+  box-shadow:
+    0 8px 20px rgba(23, 32, 51, 0.15);
+}
+
+
+/* 書封外框 */
+
+.book-cover {
+  width: 76px;
+  height: 100px;
+
+  max-width: 100%;
+
+  border-radius: 8px;
+
+  overflow: hidden;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  background: #f1f5f9;
+
+  flex-shrink: 0;
+
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.12);
+}
+
+
+/* 真正書封圖片 */
+
+.book-cover img,
+.book-cover-image {
+  display: block;
+
+  width: 100% !important;
+  height: 100% !important;
+
+  max-width: 100% !important;
+  max-height: 100% !important;
+
+  object-fit: cover;
+
+  margin: 0;
+  padding: 0;
+}
+
+
+/* 紅本、藍本暫用文字 */
+
+.book-text-cover {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 8px;
+
+  text-align: center;
+
+  font-size: 16px;
+  font-weight: 800;
+
+  line-height: 1.3;
+
+  color: #ffffff;
+}
+
+
+/* 紅本 */
+
+.book-button[data-book="4"] .book-text-cover {
+  background:
+    linear-gradient(
+      145deg,
+      #F8CBAD,
+      #F3B99A
+    );
+
+  color: #5a3a32;
+}
+
+
+/* 藍本 */
+
+.book-button[data-book="6"] .book-text-cover {
+  background:
+    linear-gradient(
+      145deg,
+      #296da8,
+      #173f69
+    );
+}
+
+
+/* 歌本名稱 */
+
+.book-name {
+  width: 100%;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  line-height: 1.35;
+
+  text-align: center;
+
+  color: #344054;
+
+  white-space: normal;
+}
+
+
+/* =========================
+   手機
+========================= */
+
+@media (max-width: 650px) {
+
+  .book-list {
+    display: flex;
+
+    overflow-x: auto;
+
+    gap: 10px;
+
+    padding-bottom: 8px;
+
+    scroll-snap-type: x proximity;
+
+    scrollbar-width: none;
+  }
+
+  .book-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .book-button {
+    flex: 0 0 96px;
+
+    scroll-snap-align: start;
+  }
+
+  .book-cover {
+    width: 68px;
+    height: 90px;
+  }
+
+  .book-name {
+    font-size: 12px;
+  }
+
+}
+
+
+/* =========================
+   歌號頂部
+========================= */
+
+.number-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 12px;
+}
+
+.current-book-name {
+  margin-top: 5px;
+
+  font-size: 22px;
+
+  font-weight: 850;
+}
+
+.number-display {
+  font-size: clamp(30px, 7vw, 48px);
+
+  font-weight: 850;
+
+  font-variant-numeric: tabular-nums;
+
+  letter-spacing: 4px;
+
+  color: #172033;
+}
+
+
+/* =========================
+   滾輪
+========================= */
+
+.wheel-panel {
+  position: relative;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 6px;
+
+  max-width: 520px;
+
+  margin: 0 auto;
+
+  padding: 6px;
+}
+
+.wheel-column {
+  position: relative;
+
+  min-width: 0;
+
+  text-align: center;
+}
+
+.wheel {
+  height: 210px;
+
+  overflow-y: scroll;
+
+  scroll-snap-type: y mandatory;
+
+  overscroll-behavior: contain;
+
+  scrollbar-width: none;
+
+  -ms-overflow-style: none;
+
+  touch-action: pan-y;
+
+  position: relative;
+
+  z-index: 2;
+}
+
+.wheel::-webkit-scrollbar {
+  display: none;
+}
+
+
+/*
+  每一格固定 70px
+  JS 的 ITEM_HEIGHT 也必須是 70
+*/
+
+.wheel-option {
+  height: 70px;
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  scroll-snap-align: center;
+
+  scroll-snap-stop: always;
+
+  font-size: clamp(31px, 8vw, 50px);
+
+  font-weight: 500;
+
+  color: #a0a8b6;
+
+  font-variant-numeric: tabular-nums;
+
+  transition:
+    transform 0.16s ease,
+    opacity 0.16s ease,
+    color 0.16s ease;
+
+  user-select: none;
+}
+
+.wheel-option.selected {
+  color: #101828;
+
+  font-weight: 850;
+
+  transform: scale(1.08);
+}
+
+.wheel-padding {
+  height: 70px;
+
+  pointer-events: none;
+}
+
+.selection-window {
+  position: absolute;
+
+  z-index: 1;
+
+  pointer-events: none;
+
+  left: 4px;
+
+  right: 4px;
+
+  top: 76px;
+
+  height: 70px;
+
+  border-radius: 18px;
+
+  background: #eef2f6;
+
+  border:
+    1px solid rgba(15, 23, 42, 0.06);
+}
+
+
+/*
+  上下淡出效果
+*/
+
+.wheel-column::before,
+.wheel-column::after {
+  content: "";
+
+  position: absolute;
+
+  z-index: 3;
+
+  pointer-events: none;
+
+  left: 0;
+
+  right: 0;
+
+  height: 65px;
+}
+
+.wheel-column::before {
+  top: 0;
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.96),
+      rgba(255, 255, 255, 0)
+    );
+}
+
+.wheel-column::after {
+  bottom: 24px;
+
+  background:
+    linear-gradient(
+      to top,
+      rgba(255, 255, 255, 0.96),
+      rgba(255, 255, 255, 0)
+    );
+}
+
+.wheel-label {
+  margin-top: 6px;
+
+  font-size: 12px;
+
+  color: #98a2b3;
+
+  font-weight: 700;
+}
+
+
+/* =========================
+   詩歌區
+========================= */
+
+.hymn-area {
+  margin-top: 22px;
+}
+
+.hymn-card {
+  background: #ffffff;
+
+  border-radius: 26px;
+
+  padding:
+    clamp(20px, 5vw, 38px);
+
+  box-shadow:
+    0 18px 50px rgba(15, 23, 42, 0.09);
+
+  animation:
+    hymnIn 0.25s ease;
+}
+
+@keyframes hymnIn {
+
+  from {
+    opacity: 0;
+
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform: translateY(0);
+  }
+
+}
+
+.hymn-top {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-start;
+
+  gap: 20px;
+}
+
+.hymn-book {
+  font-size: 13px;
+
+  color: #667085;
+
+  font-weight: 800;
+
+  margin-bottom: 7px;
+}
+
+.hymn-title {
+  margin: 0;
+
+  font-size: clamp(26px, 6vw, 42px);
+
+  line-height: 1.28;
+
+  letter-spacing: -0.5px;
+}
+
+.hymn-number {
+  flex-shrink: 0;
+
+  min-width: 72px;
+
+  text-align: center;
+
+  padding: 9px 12px;
+
+  border-radius: 14px;
+
+  background: #172033;
+
+  color: white;
+
+  font-size: 18px;
+
+  font-weight: 850;
+
+  font-variant-numeric: tabular-nums;
+}
+
+.divider {
+  height: 1px;
+
+  background: #eaecf0;
+
+  margin: 24px 0;
+}
+
+.hymn-lyrics {
+  white-space: pre-wrap;
+
+  overflow-wrap: break-word;
+
+  font-size: clamp(21px, 4.5vw, 29px);
+
+  line-height: 1.8;
+
+  color: #252d3d;
+
+  letter-spacing: 0.02em;
+}
+
+
+/* =========================
+   空白狀態
+========================= */
+
+.empty-state,
+.not-found {
+  text-align: center;
+
+  padding: 60px 20px;
+
+  color: #98a2b3;
+}
+
+.empty-icon {
+  font-size: 45px;
+
+  margin-bottom: 12px;
+}
+
+.empty-title,
+.not-found-title {
+  color: #475467;
+
+  font-size: 21px;
+
+  font-weight: 800;
+
+  margin-bottom: 6px;
+}
+
+.empty-text,
+.not-found-text {
+  font-size: 14px;
+}
+
+.not-found-number {
+  font-size: 50px;
+
+  font-weight: 850;
+
+  letter-spacing: 3px;
+
+  color: #d0d5dd;
+
+  margin-bottom: 10px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+
+/* =========================
+   手機
+========================= */
+
+@media (max-width: 650px) {
+
+  .app {
+    padding-left: 12px;
+
+    padding-right: 12px;
+  }
+
+  .header {
+    margin-bottom: 20px;
+  }
+
+  .book-section,
+  .number-section {
+    border-radius: 20px;
+
+    padding: 16px;
+  }
+
+  .book-list {
+    grid-template-columns:
+      repeat(6, 78px);
+
+    justify-content: flex-start;
+  }
+
+  .number-display {
+    letter-spacing: 2px;
+  }
+
+  .hymn-top {
+    flex-direction: column-reverse;
+
+    gap: 12px;
+  }
+
+  .hymn-number {
+    align-self: flex-start;
+  }
+
+}
+
+
+/* =========================
+   很小的手機
+========================= */
+
+@media (max-width: 390px) {
+
+  .wheel-panel {
+    gap: 2px;
+  }
+
+  .wheel-option {
+    font-size: 34px;
+  }
+
+  .selection-window {
+    border-radius: 14px;
+  }
+
+}

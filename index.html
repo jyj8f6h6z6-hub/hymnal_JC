@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <title>詩歌選擇器</title>
+
+  <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+
+  <div class="app">
+
+    <!-- =========================
+         頁首
+    ========================== -->
+    <header class="header">
+      <div>
+        <div class="eyebrow">HYMN</div>
+        <h1>詩歌</h1>
+      </div>
+    </header>
+
+
+    <!-- =========================
+         選擇歌本
+    ========================== -->
+    <section class="book-section">
+
+      <div class="section-title">
+        選擇詩歌本
+      </div>
+
+      <div
+        id="bookList"
+        class="book-list"
+      ></div>
+
+    </section>
+
+
+    <!-- =========================
+         歌號選擇
+    ========================== -->
+    <section class="number-section">
+
+      <div class="number-header">
+
+        <div>
+          <div class="section-title">
+            選擇歌號
+          </div>
+
+          <div
+            id="currentBookName"
+            class="current-book-name"
+          >
+            歌本 1
+          </div>
+        </div>
+
+        <div
+          id="numberDisplay"
+          class="number-display"
+        >
+          0001
+        </div>
+
+      </div>
+
+
+      <!-- 四位數滾輪 -->
+      <div class="wheel-panel">
+
+        <div class="selection-window"></div>
+
+
+        <div class="wheel-column">
+
+          <div
+            id="wheelThousands"
+            class="wheel"
+            data-place="1000"
+            tabindex="0"
+          ></div>
+
+          <div class="wheel-label">
+            千
+          </div>
+
+        </div>
+
+
+        <div class="wheel-column">
+
+          <div
+            id="wheelHundreds"
+            class="wheel"
+            data-place="100"
+            tabindex="0"
+          ></div>
+
+          <div class="wheel-label">
+            百
+          </div>
+
+        </div>
+
+
+        <div class="wheel-column">
+
+          <div
+            id="wheelTens"
+            class="wheel"
+            data-place="10"
+            tabindex="0"
+          ></div>
+
+          <div class="wheel-label">
+            十
+          </div>
+
+        </div>
+
+
+        <div class="wheel-column">
+
+          <div
+            id="wheelOnes"
+            class="wheel"
+            data-place="1"
+            tabindex="0"
+          ></div>
+
+          <div class="wheel-label">
+            個
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         詩歌顯示
+    ========================== -->
+    <main
+      id="hymnArea"
+      class="hymn-area"
+    >
+
+      <div
+        id="emptyState"
+        class="empty-state"
+      >
+
+        <div class="empty-icon">
+          ♫
+        </div>
+
+        <div class="empty-title">
+          選擇詩歌
+        </div>
+
+        <div class="empty-text">
+          滑動上方數字滾輪選擇歌號
+        </div>
+
+      </div>
+
+
+      <article
+        id="hymnCard"
+        class="hymn-card hidden"
+      >
+
+        <div class="hymn-top">
+
+          <div>
+
+            <div
+              id="hymnBook"
+              class="hymn-book"
+            ></div>
+
+            <h2
+              id="hymnTitle"
+              class="hymn-title"
+            ></h2>
+
+          </div>
+
+          <div
+            id="hymnNumber"
+            class="hymn-number"
+          ></div>
+
+        </div>
+
+
+        <div class="divider"></div>
+
+
+        <div
+          id="hymnLyrics"
+          class="hymn-lyrics"
+        ></div>
+
+      </article>
+
+
+      <div
+        id="notFound"
+        class="not-found hidden"
+      >
+
+        <div class="not-found-number" id="notFoundNumber">
+          0000
+        </div>
+
+        <div class="not-found-title">
+          找不到這首詩歌
+        </div>
+
+        <div class="not-found-text">
+          請確認詩歌本與歌號
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <!--
+    hymns.js 必須先載入
+    app.js 才能使用 hymns 資料
+  -->
+  <script src="./hymns.js"></script>
+  <script src="./app.js"></script>
+
+</body>
+</html>
