@@ -95,6 +95,57 @@
 
 
     <!-- =========================
+         搜尋詩歌
+    ========================== -->
+
+    <section class="search-section">
+
+      <div class="section-title">
+        搜尋詩歌
+      </div>
+
+      <div class="search-box">
+
+        <span
+          class="search-icon"
+          aria-hidden="true"
+        >⌕</span>
+
+        <input
+          id="searchInput"
+          class="search-input"
+          type="search"
+          inputmode="search"
+          autocomplete="off"
+          placeholder="輸入歌號、歌名或歌詞"
+          aria-label="搜尋歌號、歌名或歌詞"
+        >
+
+        <button
+          id="searchClear"
+          class="search-clear hidden"
+          type="button"
+          aria-label="清除搜尋"
+        >×</button>
+
+      </div>
+
+      <div
+        id="searchSummary"
+        class="search-summary hidden"
+        aria-live="polite"
+      ></div>
+
+      <div
+        id="searchResults"
+        class="search-results hidden"
+      ></div>
+
+    </section>
+
+
+
+    <!-- =========================
          選擇歌號
     ========================== -->
 
@@ -160,12 +211,7 @@
             tabindex="0"
             aria-label="千位數"
           ></div>
-
-          <div class="wheel-label">
-            千
-          </div>
-
-        </div>
+</div>
 
 
 
@@ -180,12 +226,7 @@
             tabindex="0"
             aria-label="百位數"
           ></div>
-
-          <div class="wheel-label">
-            百
-          </div>
-
-        </div>
+</div>
 
 
 
@@ -200,12 +241,7 @@
             tabindex="0"
             aria-label="十位數"
           ></div>
-
-          <div class="wheel-label">
-            十
-          </div>
-
-        </div>
+</div>
 
 
 
@@ -220,12 +256,7 @@
             tabindex="0"
             aria-label="個位數"
           ></div>
-
-          <div class="wheel-label">
-            個
-          </div>
-
-        </div>
+</div>
 
 
       </div>

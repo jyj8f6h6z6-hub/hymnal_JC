@@ -217,6 +217,12 @@ const emptyState =
   );
 
 
+const hymnArea =
+  document.getElementById(
+    "hymnArea"
+  );
+
+
 const hymnCard =
   document.getElementById(
     "hymnCard"
@@ -272,6 +278,32 @@ const themeName =
   document.getElementById(
     "themeName"
   );
+
+
+
+/* 搜尋 */
+
+const searchInput =
+  document.getElementById(
+    "searchInput"
+  );
+
+const searchClear =
+  document.getElementById(
+    "searchClear"
+  );
+
+const searchSummary =
+  document.getElementById(
+    "searchSummary"
+  );
+
+const searchResults =
+  document.getElementById(
+    "searchResults"
+  );
+
+let searchTimer = null;
 
 
 
@@ -1766,6 +1798,324 @@ function showNotFound(
 
 
 /* =========================================================
+   搜尋詩歌
+========================================================= */
+
+function normalizeSearchText(value) {
+
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[，。！？、；：,.!?;:\-—－「」『』（）()［］\[\]【】]/g, "");
+
+}
+
+
+function setupSearch() {
+
+  if (!searchInput || !searchResults) {
+    return;
+  }
+
+  searchInput.addEventListener(
+    "input",
+    () => {
+
+      if (searchTimer) {
+        clearTimeout(searchTimer);
+      }
+
+      searchTimer = setTimeout(
+        () => {
+          runSearch(searchInput.value);
+        },
+        120
+      );
+
+    }
+  );
+
+  searchInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Enter" &&
+        searchResults.querySelector(".search-result")
+      ) {
+        event.preventDefault();
+        searchResults
+          .querySelector(".search-result")
+          .click();
+      }
+
+    }
+  );
+
+  if (searchClear) {
+
+    searchClear.addEventListener(
+      "click",
+      () => {
+
+        searchInput.value = "";
+        clearSearchResults();
+        searchInput.focus();
+
+      }
+    );
+
+  }
+
+}
+
+
+function clearSearchResults() {
+
+  if (searchResults) {
+    searchResults.innerHTML = "";
+    searchResults.classList.add("hidden");
+  }
+
+  if (searchSummary) {
+    searchSummary.textContent = "";
+    searchSummary.classList.add("hidden");
+  }
+
+  if (searchClear) {
+    searchClear.classList.add("hidden");
+  }
+
+}
+
+
+function runSearch(rawQuery) {
+
+  const query = String(rawQuery || "").trim();
+
+  if (searchClear) {
+    searchClear.classList.toggle("hidden", !query);
+  }
+
+  if (!query) {
+    clearSearchResults();
+    return;
+  }
+
+  /*
+    支援多關鍵字搜尋。
+
+    例如：
+    愛的 神 牧人
+
+    會拆成：
+    ["愛的", "神", "牧人"]
+
+    空白數量不限；同一首詩歌只要
+    每一個關鍵字都出現，就算符合。
+  */
+  const keywords = query
+    .split(/\s+/)
+    .map(normalizeSearchText)
+    .filter(Boolean);
+
+  if (keywords.length === 0) {
+    clearSearchResults();
+    return;
+  }
+
+  const normalizedQuery = normalizeSearchText(query);
+  const numericQuery = keywords.length === 1 && /^\d{1,4}$/.test(query)
+    ? Number(query)
+    : null;
+
+  const matches = [];
+
+  for (const hymn of hymns) {
+
+    const title = normalizeSearchText(hymn.title);
+    const lyrics = normalizeSearchText(hymn.lyrics);
+    const code = Number(hymn.code);
+
+    /*
+      標題與歌詞合併後做 AND 搜尋。
+      這樣關鍵字可以一個在標題、一個在歌詞，
+      也可以全部都在歌詞中。
+    */
+    const searchableText = `${title}${lyrics}`;
+    const allKeywordsMatch = keywords.every(
+      keyword => searchableText.includes(keyword)
+    );
+
+    let score = 99;
+
+    if (numericQuery !== null && code === numericQuery) {
+      score = 0;
+    }
+    else if (keywords.length === 1 && title === normalizedQuery) {
+      score = 1;
+    }
+    else if (keywords.length === 1 && title.startsWith(normalizedQuery)) {
+      score = 2;
+    }
+    else if (keywords.length === 1 && title.includes(normalizedQuery)) {
+      score = 3;
+    }
+    else if (keywords.length === 1 && lyrics.includes(normalizedQuery)) {
+      score = 4;
+    }
+    else if (allKeywordsMatch) {
+      /*
+        多關鍵字全部出現在標題者優先，
+        再來才是分散在標題／歌詞中的結果。
+      */
+      const allInTitle = keywords.every(
+        keyword => title.includes(keyword)
+      );
+
+      score = allInTitle ? 5 : 6;
+    }
+    else {
+      continue;
+    }
+
+    matches.push({ hymn, score });
+
+  }
+
+  matches.sort(
+    (a, b) =>
+      a.score - b.score ||
+      Number(a.hymn.book) - Number(b.hymn.book) ||
+      Number(a.hymn.code) - Number(b.hymn.code)
+  );
+
+  renderSearchResults(matches);
+
+}
+
+
+function renderSearchResults(matches) {
+
+  searchResults.innerHTML = "";
+  searchResults.classList.remove("hidden");
+
+  const total = matches.length;
+  const visibleMatches = matches.slice(0, 50);
+
+  if (searchSummary) {
+    searchSummary.classList.remove("hidden");
+    searchSummary.textContent = total > 50
+      ? `找到 ${total} 首，顯示前 50 首`
+      : `找到 ${total} 首`;
+  }
+
+  if (total === 0) {
+
+    const empty = document.createElement("div");
+    empty.className = "search-no-result";
+    empty.textContent = "找不到符合的詩歌";
+    searchResults.appendChild(empty);
+    return;
+
+  }
+
+  for (const item of visibleMatches) {
+
+    const hymn = item.hymn;
+    const book = BOOKS.find(
+      current => current.id === Number(hymn.book)
+    );
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "search-result";
+
+    const top = document.createElement("div");
+    top.className = "search-result-top";
+
+    const bookName = document.createElement("span");
+    bookName.className = "search-result-book";
+    bookName.textContent = book ? book.name : `歌本 ${hymn.book}`;
+
+    const number = document.createElement("span");
+    number.className = "search-result-number";
+    number.textContent = `第 ${hymn.code} 首`;
+
+    const title = document.createElement("div");
+    title.className = "search-result-title";
+    title.textContent = hymn.title || "未命名詩歌";
+
+    top.appendChild(bookName);
+    top.appendChild(number);
+    button.appendChild(top);
+    button.appendChild(title);
+
+    button.addEventListener(
+      "click",
+      () => {
+        openSearchResult(hymn);
+      }
+    );
+
+    searchResults.appendChild(button);
+
+  }
+
+}
+
+
+function setSelectedNumber(number) {
+
+  const safeNumber = Math.max(
+    0,
+    Math.min(9999, Number(number) || 0)
+  );
+
+  const formatted = formatNumber(safeNumber);
+
+  selectedDigits = formatted
+    .split("")
+    .map(Number);
+
+  wheels.forEach(
+    (wheel, index) => {
+
+      const value = selectedDigits[index];
+      const middleIndex = MIDDLE_SET * 10 + value;
+
+      wheel.scrollTop = middleIndex * ITEM_HEIGHT;
+      updateWheelVisual(wheel, value);
+
+    }
+  );
+
+  numberDisplay.textContent = formatted;
+
+}
+
+
+function openSearchResult(hymn) {
+
+  if (!hymn) {
+    return;
+  }
+
+  selectBook(hymn.book);
+  setSelectedNumber(hymn.code);
+  showHymn(hymn);
+
+  if (hymnArea) {
+    hymnArea.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
+}
+
+
+/* =========================================================
    初始化
 ========================================================= */
 
@@ -1794,6 +2144,13 @@ function init() {
   */
 
   buildHymnIndex();
+
+
+  /*
+    搜尋功能。
+  */
+
+  setupSearch();
 
 
   /*
