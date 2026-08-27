@@ -127,13 +127,13 @@ const THEMES = [
   {
     id: "green",
     name: "護眼",
-    themeColor: "#f3f7f2"
+    themeColor: "#e8f1e8"
   },
 
   {
     id: "pink",
     name: "暖粉",
-    themeColor: "#fbf5f4"
+    themeColor: "#f8e8ea"
   },
 
   {
