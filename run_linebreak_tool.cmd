@@ -4,11 +4,17 @@ cd /d "%~dp0"
 
 echo.
 echo ============================================
-echo Hymnal C1-C780 line-break tool - v12
+echo Supplement Hymnal Cs line-break tool - v15
 echo ============================================
 echo.
-echo Preflight: C1, C3, C6, C16, C170.
-echo Faster stanza matching + visible progress.
+echo Target: book 2 only
+echo Source: hymnal.net /zh/hymn/ts/N (CsN)
+echo.
+echo New v15 behavior:
+echo - Preflight mismatch will NOT stop the whole run.
+echo - Matching lyrics: fix line breaks only.
+echo - Different lyrics version: skip that song and report it.
+echo - Other books, code, title, favorite stay untouched.
 echo.
 
 if not exist "%~dp0hymns.js" (

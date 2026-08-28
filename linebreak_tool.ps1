@@ -13,7 +13,7 @@ if (-not (Test-Path $HymnsPath)) {
 
 $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $BackupPath = Join-Path $Root ("hymns_backup_" + $stamp + ".js")
-$ReportPath = Join-Path $Root ("linebreak_report_" + $stamp + ".csv")
+$ReportPath = Join-Path $Root ("linebreak_report_supplement_v15_" + $stamp + ".csv")
 
 Copy-Item $HymnsPath $BackupPath -Force
 Write-Host ""
@@ -143,7 +143,7 @@ function Normalize-Compact([string]$s) {
 }
 
 function Get-PageLines([int]$code) {
-    $url = "https://www.hymnal.net/zh/hymn/ch/$code"
+    $url = "https://www.hymnal.net/zh/hymn/ts/$code"
     $html = $null
 
     for ($try = 1; $try -le 3; $try++) {
@@ -871,12 +871,12 @@ function Process-Hymn(
 # Preflight
 # -----------------------------
 function Test-One([int]$code) {
-    Write-Host ("  C{0}: 讀取本機資料..." -f $code) -ForegroundColor DarkGray
+    Write-Host ("  Cs{0}: 讀取本機資料..." -f $code) -ForegroundColor DarkGray
 
     $hymn =
         $data |
         Where-Object {
-            [int]$_.book -eq 1 -and
+            [int]$_.book -eq 2 -and
             [int]$_.code -eq $code
         } |
         Select-Object -First 1
@@ -889,7 +889,7 @@ function Test-One([int]$code) {
         }
     }
 
-    Write-Host ("  C{0}: 正在下載 hymnal.net..." -f $code) -ForegroundColor DarkGray
+    Write-Host ("  Cs{0}: 正在下載 hymnal.net..." -f $code) -ForegroundColor DarkGray
 
     $page = Get-PageLines $code
 
@@ -901,7 +901,7 @@ function Test-One([int]$code) {
         }
     }
 
-    Write-Host ("  C{0}: 網頁下載完成，正在逐節比對..." -f $code) -ForegroundColor DarkGray
+    Write-Host ("  Cs{0}: 網頁下載完成，正在逐節比對..." -f $code) -ForegroundColor DarkGray
 
     $processed =
         Process-Hymn `
@@ -923,37 +923,30 @@ function Test-One([int]$code) {
     }
 }
 
-Write-Host "先測試 C1、C3、C6、C16、C170..." -ForegroundColor Cyan
+Write-Host "先抽查補充本 Cs1、Cs2、Cs3、Cs10、Cs1005..." -ForegroundColor Cyan
+Write-Host "注意：預檢只作提示；若某首歌詞版本不同，會跳過該首，不會停止整本。" -ForegroundColor DarkGray
+Write-Host ""
 
 $tests = @(
     Test-One 1
+    Test-One 2
     Test-One 3
-    Test-One 6
-    Test-One 16
-    Test-One 170
+    Test-One 10
+    Test-One 1005
 )
-
-$ok = $true
 
 foreach ($t in $tests) {
     if ($t.Success -and $t.Score -ge 90) {
-        Write-Host ("C{0}: {1}% OK" -f $t.Code, $t.Score) -ForegroundColor Green
+        Write-Host ("Cs{0}: {1}% OK" -f $t.Code, $t.Score) -ForegroundColor Green
     }
     else {
-        Write-Host ("C{0}: FAIL" -f $t.Code) -ForegroundColor Yellow
-        $ok = $false
+        Write-Host ("Cs{0}: 歌詞版本不同／無法安全比對，正式處理時只跳過這一首" -f $t.Code) -ForegroundColor Yellow
     }
-}
-
-if (-not $ok) {
-    Write-Host ""
-    Write-Host "預檢未全部通過，為安全起見停止，不修改 hymns.js。" -ForegroundColor Red
-    Read-Host "按 Enter 結束"
-    exit 1
 }
 
 Write-Host ""
-Write-Host "預檢通過，開始 C1~C780。" -ForegroundColor Green
+Write-Host "開始處理補充本（book 2）全部現有歌曲。" -ForegroundColor Green
+Write-Host "規則：可安全比對就只修正換行；版本不同就保留原文並列入報告。" -ForegroundColor Green
 Write-Host ""
 
 # -----------------------------
@@ -965,13 +958,12 @@ $report =
 $changed = 0
 $skipped = 0
 $failed = 0
+$versionDifferent = 0
 
 $targets = @(
     $data |
     Where-Object {
-        [int]$_.book -eq 1 -and
-        [int]$_.code -ge 1 -and
-        [int]$_.code -le 780
+        [int]$_.book -eq 2
     } |
     Sort-Object {
         [int]$_.code
@@ -985,8 +977,8 @@ foreach ($hymn in $targets) {
     $done++
 
     Write-Progress `
-        -Activity "正在比對 hymnal.net C1~C780" `
-        -Status ("C{0} ({1}/{2})" -f $code, $done, $targets.Count) `
+        -Activity "正在比對補充本 Cs 詩歌" `
+        -Status ("Cs{0} ({1}/{2})" -f $code, $done, $targets.Count) `
         -PercentComplete (($done / [double]$targets.Count) * 100)
 
     try {
@@ -1000,11 +992,11 @@ foreach ($hymn in $targets) {
                     code = $code
                     status = "抓取失敗"
                     similarity = ""
-                    url = "https://www.hymnal.net/zh/hymn/ch/$code"
+                    url = "https://www.hymnal.net/zh/hymn/ts/$code"
                 }
             )
 
-            Write-Host ("C{0}: 抓取失敗，跳過" -f $code) -ForegroundColor Yellow
+            Write-Host ("Cs{0}: 抓取失敗，跳過" -f $code) -ForegroundColor Yellow
             continue
         }
 
@@ -1015,17 +1007,18 @@ foreach ($hymn in $targets) {
 
         if ($null -eq $processed) {
             $skipped++
+            $versionDifferent++
 
             [void]$report.Add(
                 [pscustomobject]@{
                     code = $code
-                    status = "逐節比對不足，未修改"
+                    status = "歌詞版本不同，未修改"
                     similarity = ""
                     url = $page.Url
                 }
             )
 
-            Write-Host ("C{0}: 逐節比對不足，跳過" -f $code) -ForegroundColor Yellow
+            Write-Host ("Cs{0}: 歌詞版本不同，跳過；保留原歌詞" -f $code) -ForegroundColor Yellow
             continue
         }
 
@@ -1054,7 +1047,7 @@ foreach ($hymn in $targets) {
             }
         )
 
-        Write-Host ("C{0}: {1}（{2}%）" -f $code, $status, $score)
+        Write-Host ("Cs{0}: {1}（{2}%）" -f $code, $status, $score)
 
         Start-Sleep -Milliseconds 160
     }
@@ -1066,15 +1059,15 @@ foreach ($hymn in $targets) {
                 code = $code
                 status = "錯誤：" + $_.Exception.Message
                 similarity = ""
-                url = "https://www.hymnal.net/zh/hymn/ch/$code"
+                url = "https://www.hymnal.net/zh/hymn/ts/$code"
             }
         )
 
-        Write-Host ("C{0}: 發生錯誤，跳過" -f $code) -ForegroundColor Yellow
+        Write-Host ("Cs{0}: 發生錯誤，跳過" -f $code) -ForegroundColor Yellow
     }
 }
 
-Write-Progress -Activity "正在比對 hymnal.net C1~C780" -Completed
+Write-Progress -Activity "正在比對補充本 Cs 詩歌" -Completed
 
 # -----------------------------
 # Write back
@@ -1117,7 +1110,8 @@ Write-Host "============================================" -ForegroundColor Green
 Write-Host "完成" -ForegroundColor Green
 Write-Host ("已修正：{0} 首" -f $changed)
 Write-Host ("未修改/跳過：{0} 首" -f $skipped)
-Write-Host ("失敗：{0} 首" -f $failed)
+Write-Host ("其中歌詞版本不同：{0} 首" -f $versionDifferent) -ForegroundColor Yellow
+Write-Host ("抓取/程式失敗：{0} 首" -f $failed)
 Write-Host ""
 Write-Host "備份：" -ForegroundColor Cyan
 Write-Host $BackupPath
