@@ -13,7 +13,7 @@ if (-not (Test-Path $HymnsPath)) {
 
 $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $BackupPath = Join-Path $Root ("hymns_backup_" + $stamp + ".js")
-$ReportPath = Join-Path $Root ("linebreak_report_supplement_v15_" + $stamp + ".csv")
+$ReportPath = Join-Path $Root ("linebreak_report_supplement_v17_" + $stamp + ".csv")
 
 Copy-Item $HymnsPath $BackupPath -Force
 Write-Host ""
@@ -142,6 +142,75 @@ function Normalize-Compact([string]$s) {
     return $sb.ToString()
 }
 
+
+function Normalize-LooseChar([char]$c) {
+    if ([char]::IsWhiteSpace($c)) {
+        return [char]0
+    }
+
+    switch ([int][char]$c) {
+        0x88CF { return [char]0x88E1 } # 裏 -> 裡
+        0x7232 { return [char]0x70BA } # 爲 -> 為
+        0x81FA { return [char]0x53F0 } # 臺 -> 台
+
+        # 常見標點、引號、括號、破折號：比較時忽略
+        0x3001 { return [char]0 } # 、
+        0x3002 { return [char]0 } # 。
+        0xFF0C { return [char]0 } # ，
+        0xFF1B { return [char]0 } # ；
+        0xFF1A { return [char]0 } # ：
+        0xFF01 { return [char]0 } # ！
+        0xFF1F { return [char]0 } # ？
+        0x002C { return [char]0 }
+        0x002E { return [char]0 }
+        0x003B { return [char]0 }
+        0x003A { return [char]0 }
+        0x0021 { return [char]0 }
+        0x003F { return [char]0 }
+        0x2014 { return [char]0 }
+        0x2013 { return [char]0 }
+        0x2212 { return [char]0 }
+        0xFF0D { return [char]0 }
+        0x2500 { return [char]0 }
+        0x2018 { return [char]0 }
+        0x2019 { return [char]0 }
+        0x201C { return [char]0 }
+        0x201D { return [char]0 }
+        0x0022 { return [char]0 }
+        0x0027 { return [char]0 }
+        0x300C { return [char]0 }
+        0x300D { return [char]0 }
+        0x300E { return [char]0 }
+        0x300F { return [char]0 }
+        0xFF08 { return [char]0 }
+        0xFF09 { return [char]0 }
+        0x0028 { return [char]0 }
+        0x0029 { return [char]0 }
+        0x3010 { return [char]0 }
+        0x3011 { return [char]0 }
+
+        default { return $c }
+    }
+}
+
+function Normalize-Loose([string]$s) {
+    if ($null -eq $s) {
+        return ""
+    }
+
+    $sb = New-Object System.Text.StringBuilder
+
+    foreach ($c in $s.ToCharArray()) {
+        $n = Normalize-LooseChar $c
+
+        if ([int][char]$n -ne 0) {
+            [void]$sb.Append($n)
+        }
+    }
+
+    return $sb.ToString()
+}
+
 function Get-PageLines([int]$code) {
     $url = "https://www.hymnal.net/zh/hymn/ts/$code"
     $html = $null
@@ -221,336 +290,133 @@ function Find-BestReferenceLines(
     [string[]]$pageLines,
     [string]$localText
 ) {
-    $target = Normalize-Compact $localText
+    $target = Normalize-Loose $localText
 
     if ($target.Length -lt 2) {
         return $null
     }
 
-    $probeLength =
-        [Math]::Min(
-            6,
-            $target.Length
-        )
+    $pageSb =
+        New-Object System.Text.StringBuilder
 
-    $probe =
-        $target.Substring(
-            0,
-            $probeLength
-        )
-
-    $bestScore = 0.0
-    $bestLines = $null
-
-    <#
-      v12 效能修正：
-
-      v11 會從網頁每一行都開始嘗試，頁面很長時會非常慢。
-      v12 只從「開頭和本機歌詞前 4~6 個有效字相符」的行開始比對。
-
-      例如本機：
-        但願榮耀歸於聖父，並聖子基督...
-
-      只會從 hymnal.net 上以：
-        但願榮耀...
-      開頭的候選行開始，不再掃整個頁面的每個起點。
-    #>
-
-    $candidateStarts =
+    $lineEnds =
         New-Object System.Collections.Generic.List[int]
 
-    for (
-        $start = 0;
-        $start -lt $pageLines.Count;
-        $start++
-    ) {
+    foreach ($line in $pageLines) {
+        $norm = Normalize-Loose $line
 
-        $normStart =
-            Normalize-Compact $pageLines[$start]
-
-        if (
-            $normStart.Length -lt 2
-        ) {
+        if ($norm.Length -eq 0) {
             continue
         }
 
-        $compareLen =
-            [Math]::Min(
-                $probeLength,
-                $normStart.Length
-            )
-
-        if (
-            $compareLen -lt 2
-        ) {
-            continue
-        }
-
-        if (
-            $normStart.Substring(
-                0,
-                $compareLen
-            ) -eq
-            $probe.Substring(
-                0,
-                $compareLen
-            )
-        ) {
-            [void]$candidateStarts.Add(
-                $start
-            )
-        }
-
+        [void]$pageSb.Append($norm)
+        [void]$lineEnds.Add($pageSb.Length)
     }
 
+    $pageText = $pageSb.ToString()
 
-    # 若 6 字前綴找不到，退一步用前 3 個有效字。
-    if (
-        $candidateStarts.Count -eq 0
-    ) {
+    # 先找完全相同的「純文字」。
+    # 因為換行與標點都已忽略，所以：
+    # 本機：讓我佇立你背後，\n主！
+    # 網站：讓我佇立你背後，主！
+    # 仍會完全相同。
+    $matchIndex =
+        $pageText.LastIndexOf(
+            $target,
+            [System.StringComparison]::Ordinal
+        )
 
-        $fallbackLen =
-            [Math]::Min(
-                3,
-                $target.Length
-            )
-
-        $fallbackProbe =
-            $target.Substring(
-                0,
-                $fallbackLen
-            )
-
-        for (
-            $start = 0;
-            $start -lt $pageLines.Count;
-            $start++
-        ) {
-
-            $normStart =
-                Normalize-Compact $pageLines[$start]
-
-            if (
-                $normStart.Length -ge
-                $fallbackLen -and
-                $normStart.Substring(
-                    0,
-                    $fallbackLen
-                ) -eq
-                $fallbackProbe
-            ) {
-                [void]$candidateStarts.Add(
-                    $start
-                )
-            }
-
-        }
-
-    }
-
-
-    foreach ($start in $candidateStarts) {
-
-        $candidateLines =
-            New-Object System.Collections.Generic.List[string]
-
-        $sb =
-            New-Object System.Text.StringBuilder
-
-        for (
-            $i = $start;
-            $i -lt $pageLines.Count;
-            $i++
-        ) {
-
-            $line = $pageLines[$i]
-
-            if (
-                $line -match '^(Contact Us|聯繫我們|Delete Comment|名字|電子郵件|城市|州/省|國家|您的留言)$'
-            ) {
-                break
-            }
-
-            $normLine =
-                Normalize-Compact $line
-
-            if (
-                $normLine.Length -eq 0
-            ) {
-                continue
-            }
-
-            [void]$candidateLines.Add(
-                $line
-            )
-
-            [void]$sb.Append(
-                $normLine
-            )
-
-            $cand =
-                $sb.ToString()
-
-            if (
-                $cand.Length -ge
-                [Math]::Max(
-                    2,
-                    [Math]::Floor(
-                        $target.Length * 0.82
-                    )
-                )
-            ) {
-
-                $score =
-                    Score-Compact `
-                        $cand `
-                        $target
-
-                if (
-                    $score -gt
-                    $bestScore
-                ) {
-
-                    $bestScore =
-                        $score
-
-                    $bestLines =
-                        $candidateLines.ToArray()
-
-                }
-
-            }
-
-            if (
-                $cand.Length -gt
-                ($target.Length * 1.18 + 24)
-            ) {
-                break
-            }
-
-        }
-
-    }
-
-
-    if (
-        $null -eq $bestLines -or
-        $bestScore -lt 0.90
-    ) {
+    if ($matchIndex -lt 0) {
         return $null
     }
 
+    $matchEnd =
+        $matchIndex +
+        $target.Length
+
+    $breakCounts =
+        New-Object System.Collections.Generic.List[int]
+
+    foreach ($lineEnd in $lineEnds) {
+        if (
+            $lineEnd -gt $matchIndex -and
+            $lineEnd -lt $matchEnd
+        ) {
+            [void]$breakCounts.Add(
+                $lineEnd - $matchIndex
+            )
+        }
+    }
 
     return [pscustomobject]@{
-        Score = $bestScore
-        Lines = $bestLines
+        Score = 1.0
+        BreakCounts = $breakCounts.ToArray()
     }
 }
 
 
 function Transfer-LineBreaks(
     [string]$originalText,
-    [string[]]$referenceLines
+    [int[]]$breakCounts
 ) {
+    if ([string]::IsNullOrWhiteSpace($originalText)) {
+        return $null
+    }
+
     $origFlat =
         ($originalText -replace "`r", "") -replace "`n", ""
 
-    $origChars = $origFlat.ToCharArray()
-    $oi = 0
-    $matched = 0
-    $refMeaningful = 0
-    $breakAfter =
-        New-Object System.Collections.Generic.List[int]
+    $meaningfulTotal =
+        (Normalize-Loose $origFlat).Length
 
-    foreach ($line in $referenceLines) {
-        $lineHadComparableChar = $false
-
-        foreach ($rc in $line.ToCharArray()) {
-            $rn = Normalize-CompareChar $rc
-
-            if ([int][char]$rn -eq 0) {
-                continue
-            }
-
-            $refMeaningful++
-            $lineHadComparableChar = $true
-
-            while (
-                $oi -lt $origChars.Length -and
-                [int][char](Normalize-CompareChar $origChars[$oi]) -eq 0
-            ) {
-                $oi++
-            }
-
-            if ($oi -ge $origChars.Length) {
-                continue
-            }
-
-            $on = Normalize-CompareChar $origChars[$oi]
-
-            if ($on -eq $rn) {
-                $matched++
-                $oi++
-                continue
-            }
-
-            $found = -1
-
-            for (
-                $k = $oi + 1;
-                $k -lt [Math]::Min($origChars.Length, $oi + 19);
-                $k++
-            ) {
-                $kn = Normalize-CompareChar $origChars[$k]
-
-                if ($kn -eq $rn) {
-                    $found = $k
-                    break
-                }
-            }
-
-            if ($found -ge 0) {
-                $oi = $found + 1
-                $matched++
-            }
-        }
-
-        if ($lineHadComparableChar) {
-            [void]$breakAfter.Add($oi)
-        }
-    }
-
-    $origMeaningful = (Normalize-Compact $origFlat).Length
-
-    if (
-        $refMeaningful -eq 0 -or
-        $origMeaningful -eq 0
-    ) {
+    if ($meaningfulTotal -eq 0) {
         return $null
     }
 
-    $similarity =
-        $matched /
-        [double](
-            [Math]::Max(
-                $refMeaningful,
-                $origMeaningful
-            )
-        )
-
-    if ($similarity -lt 0.90) {
-        return $null
-    }
-
-    $breakSet =
+    $wanted =
         New-Object 'System.Collections.Generic.HashSet[int]'
 
-    foreach ($b in $breakAfter) {
+    foreach ($b in $breakCounts) {
         if (
             $b -gt 0 -and
-            $b -le $origFlat.Length
+            $b -lt $meaningfulTotal
         ) {
-            [void]$breakSet.Add($b)
+            [void]$wanted.Add([int]$b)
+        }
+    }
+
+    $rawBreaks =
+        New-Object 'System.Collections.Generic.HashSet[int]'
+
+    $count = 0
+
+    for ($i = 0; $i -lt $origFlat.Length; $i++) {
+        $n = Normalize-LooseChar $origFlat[$i]
+
+        if ([int][char]$n -ne 0) {
+            $count++
+        }
+
+        if ($wanted.Contains($count)) {
+            # hymnal.net 的行界可能落在字後。
+            # 把本機緊接在這個字後面的標點一起留在該行，
+            # 直到下一個真正文字字元之前才斷行。
+            $j = $i + 1
+
+            while ($j -lt $origFlat.Length) {
+                $nextNorm =
+                    Normalize-LooseChar $origFlat[$j]
+
+                if ([int][char]$nextNorm -ne 0) {
+                    break
+                }
+
+                $j++
+            }
+
+            if ($j -gt 0 -and $j -lt $origFlat.Length) {
+                [void]$rawBreaks.Add($j)
+            }
         }
     }
 
@@ -558,23 +424,22 @@ function Transfer-LineBreaks(
         New-Object System.Text.StringBuilder
 
     for ($i = 0; $i -lt $origFlat.Length; $i++) {
-        [void]$sb.Append($origFlat[$i])
-
-        $pos = $i + 1
-
         if (
-            $breakSet.Contains($pos) -and
-            $pos -lt $origFlat.Length
+            $i -gt 0 -and
+            $rawBreaks.Contains($i)
         ) {
             [void]$sb.Append("`n")
         }
+
+        [void]$sb.Append($origFlat[$i])
     }
 
     return [pscustomobject]@{
-        Similarity = $similarity
+        Similarity = 1.0
         Text = $sb.ToString().Trim()
     }
 }
+
 
 function Split-Stanzas([string]$body) {
     $lines = $body -split "`r?`n"
@@ -648,13 +513,14 @@ function Process-Stanza(
     $chorusIndex = -1
 
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i].Trim() -match '^[（(]副[）)]$') {
+        if ($lines[$i].Trim() -match '^[（(]副[^）)]*[）)]$') {
             $chorusIndex = $i
             break
         }
     }
 
     if ($chorusIndex -ge 0) {
+        $chorusMarker = $lines[$chorusIndex].Trim()
         $mainLines = @()
 
         if ($chorusIndex -gt 0) {
@@ -685,7 +551,7 @@ function Process-Stanza(
             $mainResult =
                 Transfer-LineBreaks `
                     -originalText $mainText `
-                    -referenceLines $mainRef.Lines
+                    -breakCounts $mainRef.BreakCounts
 
             if ($null -eq $mainResult) {
                 return $null
@@ -706,20 +572,16 @@ function Process-Stanza(
                         -pageLines $pageLines `
                         -localText $chorusText
 
-                if ($null -eq $chorusRef) {
-                    return $null
+                if ($null -ne $chorusRef) {
+                    $chorusResult =
+                        Transfer-LineBreaks `
+                            -originalText $chorusText `
+                            -breakCounts $chorusRef.BreakCounts
+
+                    if ($null -ne $chorusResult) {
+                        $chorusCache[$chorusKey] = $chorusResult
+                    }
                 }
-
-                $chorusResult =
-                    Transfer-LineBreaks `
-                        -originalText $chorusText `
-                        -referenceLines $chorusRef.Lines
-
-                if ($null -eq $chorusResult) {
-                    return $null
-                }
-
-                $chorusCache[$chorusKey] = $chorusResult
             }
         }
 
@@ -731,15 +593,24 @@ function Process-Stanza(
             [void]$parts.Add($mainResult.Text)
         }
 
-        [void]$parts.Add("（副）")
+        [void]$parts.Add($chorusMarker)
+
+        $chorusPreserved = $false
 
         if ($null -ne $chorusResult) {
             [void]$parts.Add($chorusResult.Text)
+        }
+        elseif (-not [string]::IsNullOrWhiteSpace($chorusText)) {
+            # hymnal.net 常只列一次副歌，或副歌文字版本略有不同。
+            # 這種情況不讓整首失敗；保留本機副歌原文與原換行。
+            [void]$parts.Add($chorusText)
+            $chorusPreserved = $true
         }
 
         return [pscustomobject]@{
             Text = ($parts -join "`n")
             Score = 1.0
+            ChorusPreserved = $chorusPreserved
         }
     }
 
@@ -761,7 +632,7 @@ function Process-Stanza(
     $result =
         Transfer-LineBreaks `
             -originalText $plainText `
-            -referenceLines $ref.Lines
+            -breakCounts $ref.BreakCounts
 
     if ($null -eq $result) {
         return $null
@@ -773,6 +644,7 @@ function Process-Stanza(
             "`n" +
             $result.Text
         Score = $result.Similarity
+        ChorusPreserved = $false
     }
 }
 
@@ -820,6 +692,7 @@ function Process-Hymn(
     $chorusCache = @{}
     $rebuilt = New-Object System.Collections.Generic.List[string]
     $scores = New-Object System.Collections.Generic.List[double]
+    $preservedChorusCount = 0
 
     foreach ($stanza in $stanzas) {
         $processed =
@@ -834,6 +707,10 @@ function Process-Hymn(
 
         [void]$rebuilt.Add($processed.Text)
         [void]$scores.Add([double]$processed.Score)
+
+        if ($processed.ChorusPreserved) {
+            $preservedChorusCount++
+        }
     }
 
     $newBody = $rebuilt -join "`n`n"
@@ -864,6 +741,7 @@ function Process-Hymn(
     return [pscustomobject]@{
         Lyrics = $newLyrics
         Similarity = $avg
+        PreservedChorusCount = $preservedChorusCount
     }
 }
 
@@ -950,6 +828,18 @@ Write-Host "規則：可安全比對就只修正換行；版本不同就保留�
 Write-Host ""
 
 # -----------------------------
+# v17：只處理 v17 判定版本不同的 152 首
+# -----------------------------
+$focusCodes = @(
+    3, 29, 31, 32, 33, 34, 36, 37, 104, 109, 122, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 205, 211, 237, 243, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 314, 317, 328, 330, 331, 332, 333, 334, 336, 337, 338, 339, 340, 341, 342, 344, 347, 348, 349, 401, 418, 427, 431, 432, 433, 435, 436, 437, 438, 439, 440, 442, 444, 445, 448, 449, 451, 452, 453, 454, 455, 458, 460, 461, 462, 463, 464, 466, 468, 469, 470, 503, 506, 508, 513, 531, 534, 537, 539, 540, 541, 542, 616, 618, 619, 620, 621, 623, 624, 625, 626, 627, 628, 754, 755, 756, 758, 759, 760, 762, 822, 824, 842, 852, 853, 854, 857, 858, 859, 860, 861, 862, 863, 865, 867, 870, 871, 872, 873, 875, 876, 878, 880, 903, 907, 916, 917, 920, 921, 922, 924, 926, 928, 930
+)
+
+Write-Host ""
+Write-Host "v17 只重新處理 v17 的 152 首版本不同歌曲。" -ForegroundColor Cyan
+Write-Host "副歌若 hymnal.net 未重複列出，或副歌文字版本不同，會保留本機副歌，不再讓整首失敗。" -ForegroundColor Cyan
+Write-Host ""
+
+# -----------------------------
 # Main
 # -----------------------------
 $report =
@@ -959,11 +849,13 @@ $changed = 0
 $skipped = 0
 $failed = 0
 $versionDifferent = 0
+$chorusPreservedSongs = 0
 
 $targets = @(
     $data |
     Where-Object {
-        [int]$_.book -eq 2
+        [int]$_.book -eq 2 -and
+        $focusCodes -contains [int]$_.code
     } |
     Sort-Object {
         [int]$_.code
@@ -1012,13 +904,13 @@ foreach ($hymn in $targets) {
             [void]$report.Add(
                 [pscustomobject]@{
                     code = $code
-                    status = "歌詞版本不同，未修改"
+                    status = "純文字仍不同，未修改"
                     similarity = ""
                     url = $page.Url
                 }
             )
 
-            Write-Host ("Cs{0}: 歌詞版本不同，跳過；保留原歌詞" -f $code) -ForegroundColor Yellow
+            Write-Host ("Cs{0}: 純文字仍不同，跳過；保留原歌詞" -f $code) -ForegroundColor Yellow
             continue
         }
 
@@ -1028,14 +920,33 @@ foreach ($hymn in $targets) {
                 1
             )
 
+        $hasPreservedChorus =
+            ([int]$processed.PreservedChorusCount -gt 0)
+
+        if ($hasPreservedChorus) {
+            $chorusPreservedSongs++
+        }
+
         if ($processed.Lyrics -ne [string]$hymn.lyrics) {
             $hymn.lyrics = $processed.Lyrics
             $changed++
-            $status = "已修正換行"
+
+            if ($hasPreservedChorus) {
+                $status = "已修正主歌換行；副歌保留本機版本"
+            }
+            else {
+                $status = "已修正換行"
+            }
         }
         else {
             $skipped++
-            $status = "原本已一致"
+
+            if ($hasPreservedChorus) {
+                $status = "主歌原本已一致；副歌保留本機版本"
+            }
+            else {
+                $status = "原本已一致"
+            }
         }
 
         [void]$report.Add(
@@ -1110,7 +1021,8 @@ Write-Host "============================================" -ForegroundColor Green
 Write-Host "完成" -ForegroundColor Green
 Write-Host ("已修正：{0} 首" -f $changed)
 Write-Host ("未修改/跳過：{0} 首" -f $skipped)
-Write-Host ("其中歌詞版本不同：{0} 首" -f $versionDifferent) -ForegroundColor Yellow
+Write-Host ("其中純文字仍不同：{0} 首" -f $versionDifferent) -ForegroundColor Yellow
+Write-Host ("副歌保留本機版本：{0} 首" -f $chorusPreservedSongs) -ForegroundColor Yellow
 Write-Host ("抓取/程式失敗：{0} 首" -f $failed)
 Write-Host ""
 Write-Host "備份：" -ForegroundColor Cyan
