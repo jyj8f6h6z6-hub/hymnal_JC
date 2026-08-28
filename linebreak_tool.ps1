@@ -13,7 +13,7 @@ if (-not (Test-Path $HymnsPath)) {
 
 $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $BackupPath = Join-Path $Root ("hymns_backup_" + $stamp + ".js")
-$ReportPath = Join-Path $Root ("linebreak_report_supplement_v17_" + $stamp + ".csv")
+$ReportPath = Join-Path $Root ("linebreak_report_supplement_v18_" + $stamp + ".csv")
 
 Copy-Item $HymnsPath $BackupPath -Force
 Write-Host ""
@@ -211,6 +211,88 @@ function Normalize-Loose([string]$s) {
     return $sb.ToString()
 }
 
+
+function Get-SimilarityScore(
+    [string]$a,
+    [string]$b
+) {
+    if ($null -eq $a) { $a = "" }
+    if ($null -eq $b) { $b = "" }
+
+    if ($a -eq $b) {
+        return 1.0
+    }
+
+    if ($a.Length -eq 0 -or $b.Length -eq 0) {
+        return 0.0
+    }
+
+    # Dynamic-programming Levenshtein distance.
+    $prev = New-Object int[] ($b.Length + 1)
+    $curr = New-Object int[] ($b.Length + 1)
+
+    for ($j = 0; $j -le $b.Length; $j++) {
+        $prev[$j] = $j
+    }
+
+    for ($i = 1; $i -le $a.Length; $i++) {
+        $curr[0] = $i
+
+        for ($j = 1; $j -le $b.Length; $j++) {
+            $cost =
+                if ($a[$i - 1] -eq $b[$j - 1]) {
+                    0
+                }
+                else {
+                    1
+                }
+
+            $delete = $prev[$j] + 1
+            $insert = $curr[$j - 1] + 1
+            $subst = $prev[$j - 1] + $cost
+
+            $curr[$j] =
+                [Math]::Min(
+                    [Math]::Min($delete, $insert),
+                    $subst
+                )
+        }
+
+        $tmpRow = $prev
+        $prev = $curr
+        $curr = $tmpRow
+    }
+
+    $distance = $prev[$b.Length]
+    $maxLen = [Math]::Max($a.Length, $b.Length)
+
+    return 1.0 - ($distance / [double]$maxLen)
+}
+
+function Get-LooseLineMap(
+    [string[]]$pageLines
+) {
+    $items =
+        New-Object System.Collections.Generic.List[object]
+
+    foreach ($line in $pageLines) {
+        $norm = Normalize-Loose $line
+
+        if ($norm.Length -eq 0) {
+            continue
+        }
+
+        [void]$items.Add(
+            [pscustomobject]@{
+                Original = $line
+                Norm = $norm
+            }
+        )
+    }
+
+    return $items.ToArray()
+}
+
 function Get-PageLines([int]$code) {
     $url = "https://www.hymnal.net/zh/hymn/ts/$code"
     $html = $null
@@ -296,61 +378,124 @@ function Find-BestReferenceLines(
         return $null
     }
 
+    $items = Get-LooseLineMap $pageLines
+
+    if ($items.Count -eq 0) {
+        return $null
+    }
+
+    $bestScore = 0.0
+    $bestBreaks = $null
+
+    # Fast exact path first.
     $pageSb =
         New-Object System.Text.StringBuilder
 
     $lineEnds =
         New-Object System.Collections.Generic.List[int]
 
-    foreach ($line in $pageLines) {
-        $norm = Normalize-Loose $line
-
-        if ($norm.Length -eq 0) {
-            continue
-        }
-
-        [void]$pageSb.Append($norm)
+    foreach ($item in $items) {
+        [void]$pageSb.Append($item.Norm)
         [void]$lineEnds.Add($pageSb.Length)
     }
 
     $pageText = $pageSb.ToString()
 
-    # 先找完全相同的「純文字」。
-    # 因為換行與標點都已忽略，所以：
-    # 本機：讓我佇立你背後，\n主！
-    # 網站：讓我佇立你背後，主！
-    # 仍會完全相同。
-    $matchIndex =
+    $exactIndex =
         $pageText.LastIndexOf(
             $target,
             [System.StringComparison]::Ordinal
         )
 
-    if ($matchIndex -lt 0) {
-        return $null
-    }
+    if ($exactIndex -ge 0) {
+        $exactEnd =
+            $exactIndex + $target.Length
 
-    $matchEnd =
-        $matchIndex +
-        $target.Length
+        $breakCounts =
+            New-Object System.Collections.Generic.List[int]
 
-    $breakCounts =
-        New-Object System.Collections.Generic.List[int]
+        foreach ($lineEnd in $lineEnds) {
+            if (
+                $lineEnd -gt $exactIndex -and
+                $lineEnd -lt $exactEnd
+            ) {
+                [void]$breakCounts.Add(
+                    $lineEnd - $exactIndex
+                )
+            }
+        }
 
-    foreach ($lineEnd in $lineEnds) {
-        if (
-            $lineEnd -gt $matchIndex -and
-            $lineEnd -lt $matchEnd
-        ) {
-            [void]$breakCounts.Add(
-                $lineEnd - $matchIndex
-            )
+        return [pscustomobject]@{
+            Score = 1.0
+            BreakCounts = $breakCounts.ToArray()
         }
     }
 
+    # v18 tolerant path:
+    # compare each contiguous group of hymnal.net lines against
+    # the local stanza after removing line breaks/punctuation.
+    #
+    # Only accept >= 95% similarity.
+    $minAccept = 0.95
+
+    for ($start = 0; $start -lt $items.Count; $start++) {
+        $sb =
+            New-Object System.Text.StringBuilder
+
+        $breaks =
+            New-Object System.Collections.Generic.List[int]
+
+        for ($i = $start; $i -lt $items.Count; $i++) {
+            if ($sb.Length -gt 0) {
+                [void]$breaks.Add($sb.Length)
+            }
+
+            [void]$sb.Append($items[$i].Norm)
+
+            $cand = $sb.ToString()
+
+            # Too short: keep extending.
+            if (
+                $cand.Length -lt
+                [Math]::Max(
+                    2,
+                    [Math]::Floor($target.Length * 0.82)
+                )
+            ) {
+                continue
+            }
+
+            $score =
+                Get-SimilarityScore `
+                    $target `
+                    $cand
+
+            if ($score -gt $bestScore) {
+                $bestScore = $score
+                $bestBreaks = $breaks.ToArray()
+            }
+
+            # Once candidate is much longer than target,
+            # extending further is unlikely to improve.
+            if (
+                $cand.Length -gt
+                [Math]::Ceiling($target.Length * 1.18 + 12)
+            ) {
+                break
+            }
+        }
+    }
+
+    if (
+        $null -eq $bestBreaks -or
+        $bestScore -lt $minAccept
+    ) {
+        return $null
+    }
+
     return [pscustomobject]@{
-        Score = 1.0
-        BreakCounts = $breakCounts.ToArray()
+        Score = $bestScore
+        BreakCounts = $bestBreaks
     }
 }
 
@@ -828,14 +973,14 @@ Write-Host "規則：可安全比對就只修正換行；版本不同就保留�
 Write-Host ""
 
 # -----------------------------
-# v17：只處理 v17 判定版本不同的 152 首
+# v18：只處理 v18 判定版本不同的 152 首
 # -----------------------------
 $focusCodes = @(
-    3, 29, 31, 32, 33, 34, 36, 37, 104, 109, 122, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 205, 211, 237, 243, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 314, 317, 328, 330, 331, 332, 333, 334, 336, 337, 338, 339, 340, 341, 342, 344, 347, 348, 349, 401, 418, 427, 431, 432, 433, 435, 436, 437, 438, 439, 440, 442, 444, 445, 448, 449, 451, 452, 453, 454, 455, 458, 460, 461, 462, 463, 464, 466, 468, 469, 470, 503, 506, 508, 513, 531, 534, 537, 539, 540, 541, 542, 616, 618, 619, 620, 621, 623, 624, 625, 626, 627, 628, 754, 755, 756, 758, 759, 760, 762, 822, 824, 842, 852, 853, 854, 857, 858, 859, 860, 861, 862, 863, 865, 867, 870, 871, 872, 873, 875, 876, 878, 880, 903, 907, 916, 917, 920, 921, 922, 924, 926, 928, 930
+    3, 31, 33, 34, 37, 104, 122, 138, 139, 141, 148, 149, 205, 211, 237, 248, 249, 250, 251, 252, 253, 254, 256, 257, 258, 314, 330, 331, 332, 334, 336, 337, 338, 339, 340, 342, 348, 418, 427, 432, 436, 438, 439, 440, 444, 445, 449, 451, 452, 453, 454, 455, 458, 460, 461, 462, 463, 466, 469, 470, 503, 506, 508, 513, 531, 534, 539, 540, 541, 616, 618, 621, 623, 626, 627, 628, 754, 755, 756, 759, 762, 822, 824, 842, 852, 857, 858, 859, 860, 862, 865, 867, 870, 871, 872, 875, 878, 880, 903, 907, 916, 917, 921, 922, 924, 926, 930
 )
 
 Write-Host ""
-Write-Host "v17 只重新處理 v17 的 152 首版本不同歌曲。" -ForegroundColor Cyan
+Write-Host "v18 只重新處理 v18 的 152 首版本不同歌曲。" -ForegroundColor Cyan
 Write-Host "副歌若 hymnal.net 未重複列出，或副歌文字版本不同，會保留本機副歌，不再讓整首失敗。" -ForegroundColor Cyan
 Write-Host ""
 
@@ -904,13 +1049,13 @@ foreach ($hymn in $targets) {
             [void]$report.Add(
                 [pscustomobject]@{
                     code = $code
-                    status = "純文字仍不同，未修改"
+                    status = "相似度低於95%，未修改"
                     similarity = ""
                     url = $page.Url
                 }
             )
 
-            Write-Host ("Cs{0}: 純文字仍不同，跳過；保留原歌詞" -f $code) -ForegroundColor Yellow
+            Write-Host ("Cs{0}: 相似度低於95%，跳過；保留原歌詞" -f $code) -ForegroundColor Yellow
             continue
         }
 
@@ -1021,7 +1166,7 @@ Write-Host "============================================" -ForegroundColor Green
 Write-Host "完成" -ForegroundColor Green
 Write-Host ("已修正：{0} 首" -f $changed)
 Write-Host ("未修改/跳過：{0} 首" -f $skipped)
-Write-Host ("其中純文字仍不同：{0} 首" -f $versionDifferent) -ForegroundColor Yellow
+Write-Host ("其中相似度低於95%：{0} 首" -f $versionDifferent) -ForegroundColor Yellow
 Write-Host ("副歌保留本機版本：{0} 首" -f $chorusPreservedSongs) -ForegroundColor Yellow
 Write-Host ("抓取/程式失敗：{0} 首" -f $failed)
 Write-Host ""

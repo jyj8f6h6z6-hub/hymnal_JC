@@ -4,22 +4,19 @@ cd /d "%~dp0"
 
 echo.
 echo ============================================
-echo Supplement Hymnal Cs line-break tool - v17
+echo Supplement Hymnal Cs line-break tool - v18
 echo ============================================
 echo.
-echo ONLY retries the same 152 songs from v15.
+echo Only the 107 songs still unprocessed after v17.
 echo.
-echo v17 matching:
-echo - Ignore existing line breaks completely.
-echo - Ignore punctuation / quote differences for matching.
-echo - Compare continuous lyric text.
-echo - Then restore hymnal.net official line boundaries.
-echo - Keep YOUR lyric wording and punctuation unchanged.
-echo.
-echo Chorus:
-echo - Supports (chorus), chorus 1, chorus 2, etc.
-echo - hymnal.net does not need to repeat chorus under every stanza.
-echo - Your repeated chorus structure is preserved.
+echo v18:
+echo - Ignore original line breaks.
+echo - Ignore punctuation differences for matching.
+echo - Allow small wording differences.
+echo - Accept only similarity 95%% or higher.
+echo - Use hymnal.net line boundaries only.
+echo - Keep your original lyric wording unchanged.
+echo - Chorus logic from v17 is preserved.
 echo.
 echo Target: book 2 only.
 echo.
