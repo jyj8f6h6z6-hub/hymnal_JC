@@ -2679,18 +2679,17 @@ function selectCenteredCarouselItem() {
           targetLeft
         ),
       behavior:
-        "smooth"
+        "auto"
     });
 
 
-    setTimeout(
+    requestAnimationFrame(
       () => {
 
         hymnCarouselIgnoreScroll =
           false;
 
-      },
-      220
+      }
     );
 
 

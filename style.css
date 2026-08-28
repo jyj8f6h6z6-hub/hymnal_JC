@@ -1834,3 +1834,266 @@ body {
 
 }
 
+/* =========================
+   手機版面精簡
+   1. 選擇歌號區域縮短
+   2. 詩歌本 + 歌名同一行
+   3. 橫向轉盤放手後不再做多餘滑動動畫
+========================= */
+
+@media (max-width: 700px) {
+
+  /* 選擇歌號卡片本身縮短 */
+  .number-section {
+    padding:
+      14px 16px 12px;
+
+    margin-bottom:
+      12px;
+
+    border-radius:
+      20px;
+  }
+
+
+  .number-header {
+    margin-bottom:
+      4px;
+
+    align-items:
+      flex-start;
+  }
+
+
+  .number-header .section-title {
+    font-size:
+      12px;
+
+    line-height:
+      1.2;
+  }
+
+
+  .current-book-name {
+    margin-top:
+      2px;
+
+    font-size:
+      20px;
+
+    line-height:
+      1.15;
+  }
+
+
+  .number-display {
+    font-size:
+      34px;
+
+    line-height:
+      1;
+
+    letter-spacing:
+      3px;
+  }
+
+
+  /*
+    原本每格 70px，高度 210px。
+    手機改成每格 56px，高度 168px。
+  */
+  .wheel {
+    height:
+      168px;
+  }
+
+
+  .wheel-option,
+  .wheel-padding {
+    height:
+      56px;
+  }
+
+
+  .wheel-option {
+    font-size:
+      clamp(
+        28px,
+        7vw,
+        40px
+      );
+  }
+
+
+  .wheel-panel {
+    padding:
+      2px 4px;
+
+    gap:
+      3px;
+  }
+
+
+  .selection-window {
+    top:
+      58px;
+
+    height:
+      56px;
+
+    border-radius:
+      14px;
+  }
+
+
+  /*
+    app.js 的滾輪計算仍然使用 70px，
+    所以不要改實際 item 高度。
+    上面視覺縮短會造成不同步，因此這裡恢復 70px，
+    改用裁切視窗方式把整個區域變矮。
+  */
+  .wheel {
+    height:
+      154px;
+  }
+
+
+  .wheel-option,
+  .wheel-padding {
+    height:
+      70px;
+  }
+
+
+  .selection-window {
+    top:
+      42px;
+
+    height:
+      70px;
+  }
+
+
+  /*
+    轉盤：取消 CSS smooth，放手後直接停在選中的卡片。
+  */
+  .hymn-carousel {
+    scroll-behavior:
+      auto;
+  }
+
+
+  /*
+    卡片高度再縮短。
+  */
+  .hymn-carousel-item {
+    min-height:
+      108px;
+
+    padding:
+      12px 14px 13px;
+  }
+
+
+  .hymn-carousel-number {
+    margin-bottom:
+      7px;
+
+    padding:
+      6px 10px;
+
+    font-size:
+      15px;
+  }
+
+
+  /*
+    詩歌本與歌名排在同一行。
+  */
+  .hymn-carousel-book {
+    display:
+      inline-block;
+
+    vertical-align:
+      middle;
+
+    width:
+      auto;
+
+    margin:
+      0 8px 0 0;
+
+    padding:
+      3px 7px;
+
+    font-size:
+      11px;
+  }
+
+
+  .hymn-carousel-title {
+    display:
+      inline;
+
+    vertical-align:
+      middle;
+
+    font-size:
+      clamp(
+        20px,
+        5.6vw,
+        26px
+      );
+
+    line-height:
+      1.25;
+
+    -webkit-line-clamp:
+      unset;
+
+    -webkit-box-orient:
+      unset;
+
+    overflow:
+      visible;
+  }
+
+
+  .hymn-carousel + .divider {
+    margin-top:
+      14px;
+  }
+
+}
+
+
+@media (max-width: 390px) {
+
+  .number-section {
+    padding:
+      12px 13px 10px;
+  }
+
+
+  .wheel {
+    height:
+      146px;
+  }
+
+
+  .selection-window {
+    top:
+      38px;
+  }
+
+
+  .hymn-carousel-item {
+    min-height:
+      102px;
+
+    padding:
+      11px 13px 12px;
+  }
+
+}
+
