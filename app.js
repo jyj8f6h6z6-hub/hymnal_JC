@@ -1674,6 +1674,15 @@ function showHymn(
 
 
   /*
+    同步手機橫向詩歌轉盤。
+  */
+
+  renderHymnCarousel(
+    hymn
+  );
+
+
+  /*
     先整理歌詞，
     再於下一個畫面更新週期放進 DOM。
   */
@@ -2115,6 +2124,645 @@ function openSearchResult(hymn) {
 }
 
 
+
+/* =========================================================
+   手機詩歌橫向轉盤
+   - 顯示目前詩歌前後各 5 首
+   - 可一次滑動 1～5 首
+   - 放手後自動吸附
+   - 歌號、四位數滾輪、歌名、歌詞同步更新
+========================================================= */
+
+let hymnCarousel = null;
+let hymnCarouselTrack = null;
+let hymnCarouselTimer = null;
+let hymnCarouselIgnoreScroll = false;
+
+
+function getHymnsForCurrentBook() {
+
+  if (
+    typeof hymns === "undefined" ||
+    !Array.isArray(hymns)
+  ) {
+    return [];
+  }
+
+
+  return hymns
+    .filter(
+      hymn =>
+        Number(hymn.book) ===
+        Number(selectedBook)
+    )
+    .slice()
+    .sort(
+      (a, b) =>
+        Number(a.code) -
+        Number(b.code)
+    );
+
+}
+
+
+function ensureHymnCarousel() {
+
+  if (
+    hymnCarousel
+  ) {
+    return;
+  }
+
+
+  const hymnTop =
+    document.querySelector(
+      ".hymn-top"
+    );
+
+
+  if (
+    !hymnTop ||
+    !hymnTop.parentNode
+  ) {
+    return;
+  }
+
+
+  hymnCarousel =
+    document.createElement(
+      "div"
+    );
+
+
+  hymnCarousel.className =
+    "hymn-carousel";
+
+
+  hymnCarousel.setAttribute(
+    "aria-label",
+    "左右滑動選擇鄰近詩歌"
+  );
+
+
+  hymnCarouselTrack =
+    document.createElement(
+      "div"
+    );
+
+
+  hymnCarouselTrack.className =
+    "hymn-carousel-track";
+
+
+  hymnCarousel.appendChild(
+    hymnCarouselTrack
+  );
+
+
+  /*
+    放在原本標題區後面。
+    桌面仍顯示原本 hymn-top；
+    手機用 CSS 改顯示這個橫向轉盤。
+  */
+
+  hymnTop.insertAdjacentElement(
+    "afterend",
+    hymnCarousel
+  );
+
+
+  hymnCarousel.addEventListener(
+    "scroll",
+    () => {
+
+
+      if (
+        hymnCarouselIgnoreScroll
+      ) {
+        return;
+      }
+
+
+      clearTimeout(
+        hymnCarouselTimer
+      );
+
+
+      hymnCarouselTimer =
+        setTimeout(
+          () => {
+
+            selectCenteredCarouselItem();
+
+          },
+          120
+        );
+
+    },
+    {
+      passive: true
+    }
+  );
+
+}
+
+
+function renderHymnCarousel(
+  currentHymn
+) {
+
+  ensureHymnCarousel();
+
+
+  if (
+    !hymnCarousel ||
+    !hymnCarouselTrack ||
+    !currentHymn
+  ) {
+    return;
+  }
+
+
+  const bookHymns =
+    getHymnsForCurrentBook();
+
+
+  if (
+    !bookHymns.length
+  ) {
+    return;
+  }
+
+
+  const currentIndex =
+    bookHymns.findIndex(
+      hymn =>
+        Number(hymn.code) ===
+        Number(currentHymn.code)
+    );
+
+
+  if (
+    currentIndex === -1
+  ) {
+    return;
+  }
+
+
+  /*
+    真正可滑動的範圍：
+    目前詩歌前後最多各 5 首。
+    因此一次手勢最多不會超過 5 首。
+  */
+
+  const startIndex =
+    Math.max(
+      0,
+      currentIndex - 5
+    );
+
+
+  const endIndex =
+    Math.min(
+      bookHymns.length - 1,
+      currentIndex + 5
+    );
+
+
+  const visibleHymns =
+    bookHymns.slice(
+      startIndex,
+      endIndex + 1
+    );
+
+
+  const book =
+    BOOKS.find(
+      item =>
+        item.id ===
+        Number(currentHymn.book)
+    );
+
+
+  const bookName =
+    book
+      ? book.name
+      : `歌本 ${currentHymn.book}`;
+
+
+  hymnCarouselTrack.innerHTML =
+    "";
+
+
+  visibleHymns.forEach(
+    hymn => {
+
+
+      const item =
+        document.createElement(
+          "button"
+        );
+
+
+      item.type =
+        "button";
+
+
+      item.className =
+        "hymn-carousel-item";
+
+
+      item.dataset.code =
+        String(
+          hymn.code
+        );
+
+
+      item.dataset.bookIndex =
+        String(
+          bookHymns.indexOf(
+            hymn
+          )
+        );
+
+
+      if (
+        Number(hymn.code) ===
+        Number(currentHymn.code)
+      ) {
+
+        item.classList.add(
+          "active"
+        );
+
+        item.setAttribute(
+          "aria-current",
+          "true"
+        );
+
+      }
+
+
+      const number =
+        document.createElement(
+          "div"
+        );
+
+
+      number.className =
+        "hymn-carousel-number";
+
+
+      number.textContent =
+        `第 ${hymn.code} 首`;
+
+
+      const label =
+        document.createElement(
+          "div"
+        );
+
+
+      label.className =
+        "hymn-carousel-book";
+
+
+      label.textContent =
+        bookName;
+
+
+      const title =
+        document.createElement(
+          "div"
+        );
+
+
+      title.className =
+        "hymn-carousel-title";
+
+
+      title.textContent =
+        hymn.title
+          ? String(
+              hymn.title
+            ).trim()
+          : "未命名詩歌";
+
+
+      item.appendChild(
+        number
+      );
+
+
+      item.appendChild(
+        label
+      );
+
+
+      item.appendChild(
+        title
+      );
+
+
+      item.addEventListener(
+        "click",
+        () => {
+
+          selectCarouselHymn(
+            hymn
+          );
+
+        }
+      );
+
+
+      hymnCarouselTrack.appendChild(
+        item
+      );
+
+    }
+  );
+
+
+  /*
+    讓目前詩歌位於轉盤中央。
+    使用 instant/auto，不產生初始化滑動動畫。
+  */
+
+  requestAnimationFrame(
+    () => {
+
+
+      const active =
+        hymnCarouselTrack.querySelector(
+          ".hymn-carousel-item.active"
+        );
+
+
+      if (
+        !active
+      ) {
+        return;
+      }
+
+
+      hymnCarouselIgnoreScroll =
+        true;
+
+
+      const targetLeft =
+        active.offsetLeft -
+        (
+          hymnCarousel.clientWidth -
+          active.offsetWidth
+        ) /
+        2;
+
+
+      hymnCarousel.scrollTo({
+        left:
+          Math.max(
+            0,
+            targetLeft
+          ),
+        behavior:
+          "auto"
+      });
+
+
+      requestAnimationFrame(
+        () => {
+
+          hymnCarouselIgnoreScroll =
+            false;
+
+        }
+      );
+
+    }
+  );
+
+}
+
+
+function getCenteredCarouselItem() {
+
+  if (
+    !hymnCarousel ||
+    !hymnCarouselTrack
+  ) {
+    return null;
+  }
+
+
+  const items =
+    Array.from(
+      hymnCarouselTrack.querySelectorAll(
+        ".hymn-carousel-item"
+      )
+    );
+
+
+  if (
+    !items.length
+  ) {
+    return null;
+  }
+
+
+  const viewportCenter =
+    hymnCarousel.scrollLeft +
+    hymnCarousel.clientWidth / 2;
+
+
+  let closest =
+    null;
+
+
+  let closestDistance =
+    Infinity;
+
+
+  for (
+    const item of items
+  ) {
+
+    const itemCenter =
+      item.offsetLeft +
+      item.offsetWidth / 2;
+
+
+    const distance =
+      Math.abs(
+        itemCenter -
+        viewportCenter
+      );
+
+
+    if (
+      distance <
+      closestDistance
+    ) {
+
+      closest =
+        item;
+
+      closestDistance =
+        distance;
+
+    }
+
+  }
+
+
+  return closest;
+
+}
+
+
+function selectCenteredCarouselItem() {
+
+  const item =
+    getCenteredCarouselItem();
+
+
+  if (
+    !item
+  ) {
+    return;
+  }
+
+
+  const code =
+    Number(
+      item.dataset.code
+    );
+
+
+  if (
+    !Number.isFinite(
+      code
+    )
+  ) {
+    return;
+  }
+
+
+  /*
+    如果仍是目前這首，只把它精準吸附到中央。
+  */
+
+  if (
+    code ===
+    Number(
+      getSelectedNumber()
+    )
+  ) {
+
+    const targetLeft =
+      item.offsetLeft -
+      (
+        hymnCarousel.clientWidth -
+        item.offsetWidth
+      ) /
+      2;
+
+
+    hymnCarouselIgnoreScroll =
+      true;
+
+
+    hymnCarousel.scrollTo({
+      left:
+        Math.max(
+          0,
+          targetLeft
+        ),
+      behavior:
+        "smooth"
+    });
+
+
+    setTimeout(
+      () => {
+
+        hymnCarouselIgnoreScroll =
+          false;
+
+      },
+      220
+    );
+
+
+    return;
+
+  }
+
+
+  const bookHymns =
+    getHymnsForCurrentBook();
+
+
+  const hymn =
+    bookHymns.find(
+      item =>
+        Number(item.code) ===
+        code
+    );
+
+
+  if (
+    hymn
+  ) {
+
+    selectCarouselHymn(
+      hymn
+    );
+
+  }
+
+}
+
+
+function selectCarouselHymn(
+  hymn
+) {
+
+  if (
+    !hymn
+  ) {
+    return;
+  }
+
+
+  /*
+    同步上方四位數滾輪。
+  */
+
+  setSelectedNumber(
+    hymn.code
+  );
+
+
+  /*
+    更新標題、歌號、歌本與整首歌詞。
+    showHymn 最後會重新建立以新歌為中心的轉盤。
+  */
+
+  showHymn(
+    hymn
+  );
+
+}
+
+
+function setupHymnCarousel() {
+
+  ensureHymnCarousel();
+
+}
+
+
 /* =========================================================
    初始化
 ========================================================= */
@@ -2151,6 +2799,13 @@ function init() {
   */
 
   setupSearch();
+
+
+  /*
+    手機詩歌標題區啟用橫向轉盤，可一次滑動鄰近多首。
+  */
+
+  setupHymnCarousel();
 
 
   /*
