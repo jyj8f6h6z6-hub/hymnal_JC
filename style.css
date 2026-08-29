@@ -1836,14 +1836,15 @@ body {
 
 /* =========================
    手機版面精簡
-   1. 選擇歌號區域縮短
-   2. 詩歌本 + 歌名同一行
-   3. 橫向轉盤放手後不再做多餘滑動動畫
+   1. 保留精簡版面
+   2. 滾輪恢復原始 210px 高度
+   3. 詩歌本 + 歌名同一行
+   4. 橫向轉盤放手後不再做多餘滑動動畫
 ========================= */
 
 @media (max-width: 700px) {
 
-  /* 選擇歌號卡片本身縮短 */
+  /* 選擇歌號卡片本身維持精簡 */
   .number-section {
     padding:
       14px 16px 12px;
@@ -1899,19 +1900,27 @@ body {
 
 
   /*
-    原本每格 70px，高度 210px。
-    手機改成每格 56px，高度 168px。
+    數字滾輪恢復原始尺寸。
+
+    app.js：
+    ITEM_HEIGHT = 70
+
+    所以：
+    70 × 3 = 210px
+
+    這是原本最穩定的配置。
   */
+
   .wheel {
     height:
-      168px;
+      210px;
   }
 
 
   .wheel-option,
   .wheel-padding {
     height:
-      56px;
+      70px;
   }
 
 
@@ -1927,19 +1936,24 @@ body {
 
   .wheel-panel {
     padding:
-      2px 4px;
+      6px 4px;
 
     gap:
       3px;
   }
 
 
+  /*
+    210px 高度下，
+    中央選取框恢復原始位置。
+  */
+
   .selection-window {
     top:
-      58px;
+      76px;
 
     height:
-      56px;
+      70px;
 
     border-radius:
       14px;
@@ -1947,36 +1961,10 @@ body {
 
 
   /*
-    app.js 的滾輪計算仍然使用 70px，
-    所以不要改實際 item 高度。
-    上面視覺縮短會造成不同步，因此這裡恢復 70px，
-    改用裁切視窗方式把整個區域變矮。
+    轉盤取消 CSS smooth，
+    放手後直接停在選中的卡片。
   */
-  .wheel {
-    height:
-      154px;
-  }
 
-
-  .wheel-option,
-  .wheel-padding {
-    height:
-      70px;
-  }
-
-
-  .selection-window {
-    top:
-      42px;
-
-    height:
-      70px;
-  }
-
-
-  /*
-    轉盤：取消 CSS smooth，放手後直接停在選中的卡片。
-  */
   .hymn-carousel {
     scroll-behavior:
       auto;
@@ -1984,8 +1972,9 @@ body {
 
 
   /*
-    卡片高度再縮短。
+    詩歌轉盤卡片維持精簡。
   */
+
   .hymn-carousel-item {
     min-height:
       108px;
@@ -2010,6 +1999,7 @@ body {
   /*
     詩歌本與歌名排在同一行。
   */
+
   .hymn-carousel-book {
     display:
       inline-block;
@@ -2075,15 +2065,24 @@ body {
   }
 
 
+  /*
+    小螢幕也不要再把滾輪縮成 146px。
+    一律維持 210px，
+    才與 app.js 的 70px 計算完全一致。
+  */
+
   .wheel {
     height:
-      146px;
+      210px;
   }
 
 
   .selection-window {
     top:
-      38px;
+      76px;
+
+    height:
+      70px;
   }
 
 
