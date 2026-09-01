@@ -915,3 +915,54 @@ button, input { font-family: inherit; }
     transition-duration: .01ms !important;
   }
 }
+
+
+/* =========================================================
+   v4：歌本封面真正放大
+========================================================= */
+
+.book-button {
+  min-height: 124px;
+  padding: 8px 5px;
+}
+
+.book-cover {
+  width: 72px;
+  height: 94px;
+}
+
+.book-name {
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .book-list {
+    gap: 9px;
+  }
+
+  .book-button {
+    flex: 0 0 104px;
+    min-height: 132px;
+    padding: 8px 6px;
+  }
+
+  .book-cover {
+    width: 72px;
+    height: 94px;
+  }
+
+  .book-name {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 390px) {
+  .book-button {
+    flex-basis: 100px;
+  }
+
+  .book-cover {
+    width: 68px;
+    height: 89px;
+  }
+}
