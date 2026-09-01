@@ -966,3 +966,199 @@ button, input { font-family: inherit; }
     height: 89px;
   }
 }
+
+
+/* =========================================================
+   v5｜歌本大封面橫向轉盤 + 首頁層級調整
+   設計原則：
+   1. 歌本封面是主要辨識方式
+   2. 中央歌本最大、最清楚
+   3. 左右歌本只作為「可以滑動」的提示
+   4. 數字轉盤是第二個主要操作
+   5. 搜尋降為不知道歌號時的輔助工具
+========================================================= */
+
+/* ---------- 歌本橫向轉盤 ---------- */
+
+.book-section {
+  padding: 12px 0 10px;
+  overflow: hidden;
+}
+
+.book-list {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding:
+    8px
+    calc(50% - 95px)
+    10px;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: calc(50% - 95px);
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+}
+
+.book-list::-webkit-scrollbar {
+  display: none;
+}
+
+.book-button {
+  flex: 0 0 190px !important;
+  width: 190px;
+  min-width: 190px;
+  min-height: 232px !important;
+  padding: 8px 12px 10px !important;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  opacity: .38;
+  transform: scale(.76);
+  transform-origin: center center;
+  transition:
+    transform .18s ease,
+    opacity .18s ease;
+}
+
+.book-button.active {
+  opacity: 1;
+  transform: scale(1);
+  outline: none !important;
+}
+
+.book-cover {
+  width: 145px !important;
+  height: 190px !important;
+  border-radius: 9px;
+  background: transparent;
+  box-shadow: 0 7px 20px rgba(15, 23, 42, .16);
+}
+
+.book-cover img,
+.book-cover-image {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  background: transparent;
+}
+
+.book-text-cover {
+  border-radius: 9px;
+  font-size: 24px !important;
+  letter-spacing: .08em;
+}
+
+.book-name {
+  margin-top: 3px;
+  width: 100%;
+  white-space: nowrap;
+  font-size: 16px !important;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.book-button:not(.active) .book-name {
+  opacity: .5;
+}
+
+.book-help {
+  margin-top: -2px;
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ---------- 數字轉盤仍是主要操作 ---------- */
+
+.number-section {
+  margin-top: 12px;
+}
+
+/* ---------- 搜尋改成次要工具 ---------- */
+
+.search-section {
+  margin-top: 12px;
+  margin-bottom: 12px;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--panel-bg) 72%, transparent);
+}
+
+.search-input {
+  font-size: 16px;
+}
+
+/* 手機 */
+@media (max-width: 700px) {
+
+  .book-section {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    border-radius: 20px;
+  }
+
+  .book-list {
+    gap: 2px;
+    padding-left: calc(50% - 92px);
+    padding-right: calc(50% - 92px);
+    scroll-padding-inline: calc(50% - 92px);
+  }
+
+  .book-button {
+    flex-basis: 184px !important;
+    width: 184px;
+    min-width: 184px;
+    min-height: 225px !important;
+  }
+
+  .book-cover {
+    width: 138px !important;
+    height: 182px !important;
+  }
+
+  .book-name {
+    font-size: 16px !important;
+  }
+
+  .book-help {
+    font-size: 12px;
+  }
+
+  .search-section {
+    padding: 8px;
+  }
+}
+
+/* 小手機仍維持大封面，不退回原本小縮圖 */
+@media (max-width: 390px) {
+
+  .book-list {
+    padding-left: calc(50% - 86px);
+    padding-right: calc(50% - 86px);
+    scroll-padding-inline: calc(50% - 86px);
+  }
+
+  .book-button {
+    flex-basis: 172px !important;
+    width: 172px;
+    min-width: 172px;
+    min-height: 214px !important;
+  }
+
+  .book-cover {
+    width: 130px !important;
+    height: 171px !important;
+  }
+
+  .book-name {
+    font-size: 15px !important;
+  }
+}

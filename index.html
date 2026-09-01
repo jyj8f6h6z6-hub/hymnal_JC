@@ -39,41 +39,9 @@
 
     <section class="book-section" aria-label="選擇詩歌本">
       <div id="bookList" class="book-list"></div>
+      <div class="book-help">左右滑動選歌本</div>
     </section>
 
-    <section class="search-section" aria-label="搜尋詩歌">
-      <div class="search-box">
-        <span class="search-icon" aria-hidden="true">⌕</span>
-
-        <input
-          id="searchInput"
-          class="search-input"
-          type="search"
-          inputmode="search"
-          autocomplete="off"
-          placeholder="搜尋歌號、歌名或歌詞"
-          aria-label="搜尋歌號、歌名或歌詞"
-        >
-
-        <button
-          id="searchClear"
-          class="search-clear hidden"
-          type="button"
-          aria-label="清除搜尋"
-        >×</button>
-      </div>
-
-      <div
-        id="searchSummary"
-        class="search-summary hidden"
-        aria-live="polite"
-      ></div>
-
-      <div
-        id="searchResults"
-        class="search-results hidden"
-      ></div>
-    </section>
 
     <section class="number-section" aria-label="選擇歌號">
       <div class="number-header">
@@ -142,6 +110,41 @@
       <div class="wheel-help">上下滑動數字選歌</div>
     </section>
 
+    <section class="search-section" aria-label="搜尋詩歌">
+      <div class="search-box">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+
+        <input
+          id="searchInput"
+          class="search-input"
+          type="search"
+          inputmode="search"
+          autocomplete="off"
+          placeholder="不知道歌號？搜尋歌名或歌詞"
+          aria-label="不知道歌號時，搜尋歌名或歌詞"
+        >
+
+        <button
+          id="searchClear"
+          class="search-clear hidden"
+          type="button"
+          aria-label="清除搜尋"
+        >×</button>
+      </div>
+
+      <div
+        id="searchSummary"
+        class="search-summary hidden"
+        aria-live="polite"
+      ></div>
+
+      <div
+        id="searchResults"
+        class="search-results hidden"
+      ></div>
+    </section>
+
+
     <main
       id="hymnArea"
       class="hymn-area"
@@ -204,5 +207,6 @@
 
   <script src="./hymns.js"></script>
   <script src="./app.js"></script>
+  <script src="./enhancements.js"></script>
 </body>
 </html>
