@@ -1501,3 +1501,311 @@ document.addEventListener(
   "DOMContentLoaded",
   setupDesktopBookCarouselV8
 );
+
+
+/* =========================================================
+   v10｜桌面版歌本選擇穩定修正
+
+   原因：
+   桌面版原本有兩套會改 selectedBook 的行為：
+   1. 使用者點擊某本歌本
+   2. 歌本列捲動停止後，自動選畫面中央的歌本
+
+   當程式自己把封面置中時，也會產生 scroll，
+   舊邏輯有機會把歌本又切回別本（常見是詩歌本）。
+
+   v10 規則：
+   - 手機：保留滑動後中央歌本自動選取
+   - 桌面：一般 scroll 絕不自動換歌本
+   - 桌面只有「真的拖曳放開」時，才允許中央歌本成為新選擇
+========================================================= */
+
+let v10DesktopDragSelectionAllowed = false;
+let v10DesktopPointerDownX = null;
+let v10DesktopActuallyDragged = false;
+
+
+/*
+  重新定義中央歌本選擇。
+  舊版所有 timer 最後呼叫到的也是這個新函式。
+*/
+selectCenteredBook = function() {
+
+  const isMobile =
+    window.matchMedia(
+      "(max-width: 700px)"
+    ).matches;
+
+  /*
+    桌面一般 scroll / 程式自動置中：
+    不准偷偷切換 selectedBook。
+  */
+  if (
+    !isMobile &&
+    !v10DesktopDragSelectionAllowed
+  ) {
+    return;
+  }
+
+
+  const button =
+    getCenteredBookButton();
+
+  if (!button) {
+    v10DesktopDragSelectionAllowed = false;
+    return;
+  }
+
+
+  const bookId =
+    Number(
+      button.dataset.book
+    );
+
+  if (
+    !Number.isFinite(bookId)
+  ) {
+    v10DesktopDragSelectionAllowed = false;
+    return;
+  }
+
+
+  /*
+    真正更新目前歌本。
+  */
+  originalSelectBook(
+    bookId
+  );
+
+
+  /*
+    只做一次。
+    避免後續 smooth scroll 又再選別本。
+  */
+  v10DesktopDragSelectionAllowed = false;
+
+
+  requestAnimationFrame(
+    () => {
+
+      const currentButton =
+        bookList.querySelector(
+          `.book-button[data-book="${bookId}"]`
+        );
+
+      if (currentButton) {
+
+        bookCarouselIgnoreScroll = true;
+
+        currentButton.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center"
+        });
+
+        setTimeout(
+          () => {
+            bookCarouselIgnoreScroll = false;
+          },
+          380
+        );
+
+      }
+
+    }
+  );
+
+};
+
+
+/*
+  額外偵測桌面「真的有拖」。
+  只在拖曳距離足夠時，pointerup 才允許中央歌本成為選擇。
+*/
+function setupDesktopSelectionGuardV10() {
+
+  if (!bookList) {
+    return;
+  }
+
+
+  bookList.addEventListener(
+    "pointerdown",
+    event => {
+
+      if (
+        event.pointerType === "touch"
+      ) {
+        return;
+      }
+
+      v10DesktopPointerDownX =
+        event.clientX;
+
+      v10DesktopActuallyDragged =
+        false;
+
+      v10DesktopDragSelectionAllowed =
+        false;
+
+    },
+    true
+  );
+
+
+  bookList.addEventListener(
+    "pointermove",
+    event => {
+
+      if (
+        event.pointerType === "touch" ||
+        v10DesktopPointerDownX === null
+      ) {
+        return;
+      }
+
+      if (
+        Math.abs(
+          event.clientX -
+          v10DesktopPointerDownX
+        ) >= 8
+      ) {
+
+        v10DesktopActuallyDragged =
+          true;
+
+      }
+
+    },
+    true
+  );
+
+
+  bookList.addEventListener(
+    "pointerup",
+    event => {
+
+      if (
+        event.pointerType === "touch"
+      ) {
+        return;
+      }
+
+
+      if (
+        v10DesktopActuallyDragged
+      ) {
+
+        /*
+          在舊版 drag-finish 呼叫 selectCenteredBook 前，
+          先開一次許可。
+        */
+        v10DesktopDragSelectionAllowed =
+          true;
+
+        /*
+          再補一次保險。
+        */
+        setTimeout(
+          () => {
+
+            if (
+              v10DesktopDragSelectionAllowed
+            ) {
+              selectCenteredBook();
+            }
+
+          },
+          0
+        );
+
+      }
+
+
+      v10DesktopPointerDownX =
+        null;
+
+      v10DesktopActuallyDragged =
+        false;
+
+    },
+    true
+  );
+
+
+  /*
+    桌面點擊某歌本：
+    明確記住這本就是使用者選擇，
+    並封鎖後續 scroll 自動改本。
+  */
+  bookList.addEventListener(
+    "click",
+    event => {
+
+      if (
+        window.matchMedia(
+          "(max-width: 700px)"
+        ).matches
+      ) {
+        return;
+      }
+
+
+      const button =
+        event.target.closest(
+          ".book-button"
+        );
+
+      if (!button) {
+        return;
+      }
+
+
+      const bookId =
+        Number(
+          button.dataset.book
+        );
+
+      if (
+        !Number.isFinite(bookId)
+      ) {
+        return;
+      }
+
+
+      v10DesktopDragSelectionAllowed =
+        false;
+
+
+      /*
+        下一個 frame 再確認一次 selectedBook，
+        防止舊版其他 click handler 最後覆寫。
+      */
+      requestAnimationFrame(
+        () => {
+
+          if (
+            Number(selectedBook) !==
+            bookId
+          ) {
+
+            originalSelectBook(
+              bookId
+            );
+
+          }
+
+        }
+      );
+
+    },
+    true
+  );
+
+}
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  setupDesktopSelectionGuardV10
+);
