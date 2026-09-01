@@ -1569,3 +1569,123 @@ button, input { font-family: inherit; }
     padding-top: 12px;
   }
 }
+
+
+/* =========================================================
+   v11｜桌面版歌本恢復最早的直接點選方式
+   手機版完全保留目前橫向大封面轉盤
+========================================================= */
+
+@media (min-width: 701px) {
+
+  /*
+    桌面：六本直接排開，不再橫向捲動。
+  */
+  .book-list {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+
+    width: 100% !important;
+    overflow: visible !important;
+
+    padding: 10px 12px !important;
+    scroll-snap-type: none !important;
+    scroll-padding: 0 !important;
+
+    cursor: default !important;
+    touch-action: auto !important;
+  }
+
+  /*
+    取消 v5～v10 桌面轉盤的縮放、透明度與固定 190px 寬度。
+  */
+  .book-button,
+  .book-button.active {
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    flex: none !important;
+
+    padding: 8px 4px !important;
+
+    scroll-snap-align: none !important;
+    scroll-snap-stop: normal !important;
+
+    opacity: 1 !important;
+    transform: none !important;
+
+    cursor: pointer !important;
+    pointer-events: auto !important;
+  }
+
+  /*
+    桌面封面回到「直接選歌本」的尺寸。
+    仍保留目前的圓角與封面裁切處理。
+  */
+  .book-cover {
+    width: 78px !important;
+    height: 102px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .book-name {
+    margin-top: 7px !important;
+    font-size: 14px !important;
+    white-space: normal !important;
+    text-align: center !important;
+  }
+
+  /*
+    選中的歌本只用清楚的外框／底色提示，
+    不再移動位置。
+  */
+  .book-button.active {
+    border-radius: 14px !important;
+    background:
+      color-mix(
+        in srgb,
+        var(--button-active-bg) 82%,
+        transparent
+      ) !important;
+
+    box-shadow:
+      inset 0 0 0 2px
+      color-mix(
+        in srgb,
+        var(--text-main) 18%,
+        transparent
+      ) !important;
+  }
+
+  .book-list.is-dragging {
+    cursor: default !important;
+    scroll-snap-type: none !important;
+  }
+
+}
+
+
+/*
+  較窄的電腦／平板橫向畫面：
+  六本仍直接排列，不需要捲動。
+*/
+@media (min-width: 701px) and (max-width: 900px) {
+
+  .book-list {
+    gap: 5px !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+
+  .book-cover {
+    width: 68px !important;
+    height: 89px !important;
+  }
+
+  .book-name {
+    font-size: 13px !important;
+  }
+
+}

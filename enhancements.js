@@ -1809,3 +1809,219 @@ document.addEventListener(
   "DOMContentLoaded",
   setupDesktopSelectionGuardV10
 );
+
+
+/* =========================================================
+   v11｜桌面版歌本：最單純的直接點選
+========================================================= */
+
+/*
+  v5～v10 曾加入多套桌面拖曳／置中處理。
+  為了不大改既有檔案，v11 在 capture 階段最優先接管桌面點擊。
+
+  桌面規則只有一條：
+  點哪一本 -> originalSelectBook(bookId)
+
+  不拖曳、不置中、不因 scroll 改變歌本。
+*/
+
+function setupSimpleDesktopBooksV11() {
+
+  if (!bookList) {
+    return;
+  }
+
+
+  /*
+    桌面初始化：
+    保證沒有殘留水平捲動位置。
+  */
+  const resetDesktopBookPosition =
+    () => {
+
+      if (
+        window.matchMedia(
+          "(min-width: 701px)"
+        ).matches
+      ) {
+
+        bookCarouselIgnoreScroll =
+          true;
+
+        bookList.scrollLeft = 0;
+
+        bookList.classList.remove(
+          "is-dragging"
+        );
+
+        setTimeout(
+          () => {
+            bookCarouselIgnoreScroll =
+              false;
+          },
+          80
+        );
+
+      }
+
+    };
+
+
+  requestAnimationFrame(
+    resetDesktopBookPosition
+  );
+
+
+  window.addEventListener(
+    "resize",
+    resetDesktopBookPosition
+  );
+
+
+  /*
+    桌面版禁止 pointer 拖曳邏輯繼續往 v7～v10 傳。
+    但不阻止正常 click。
+  */
+  [
+    "pointerdown",
+    "pointermove",
+    "pointerup",
+    "pointercancel"
+  ].forEach(
+    eventName => {
+
+      bookList.addEventListener(
+        eventName,
+        event => {
+
+          if (
+            window.matchMedia(
+              "(max-width: 700px)"
+            ).matches
+          ) {
+            return;
+          }
+
+          /*
+            阻止舊桌面轉盤 handler。
+            不 preventDefault，確保 click 還會正常產生。
+          */
+          event.stopImmediatePropagation();
+
+        },
+        true
+      );
+
+    }
+  );
+
+
+  /*
+    桌面直接點選。
+  */
+  bookList.addEventListener(
+    "click",
+    event => {
+
+      if (
+        window.matchMedia(
+          "(max-width: 700px)"
+        ).matches
+      ) {
+        return;
+      }
+
+
+      const button =
+        event.target.closest(
+          ".book-button"
+        );
+
+      if (!button) {
+        return;
+      }
+
+
+      const bookId =
+        Number(
+          button.dataset.book
+        );
+
+      if (
+        !Number.isFinite(
+          bookId
+        )
+      ) {
+        return;
+      }
+
+
+      /*
+        最重要：
+        桌面只做真正的歌本切換，
+        完全不呼叫 centerBookButton / selectCenteredBook。
+      */
+      originalSelectBook(
+        bookId
+      );
+
+
+      /*
+        防止 v5～v10 的舊 click handler 再執行。
+      */
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+    },
+    true
+  );
+
+
+  /*
+    桌面任何 scroll 都不允許改 selectedBook。
+    CSS 已經不會水平捲動，這裡只是最後一道保險。
+  */
+  bookList.addEventListener(
+    "scroll",
+    () => {
+
+      if (
+        window.matchMedia(
+          "(min-width: 701px)"
+        ).matches
+      ) {
+
+        bookCarouselIgnoreScroll =
+          true;
+
+        if (
+          bookList.scrollLeft !== 0
+        ) {
+          bookList.scrollLeft = 0;
+        }
+
+        setTimeout(
+          () => {
+            bookCarouselIgnoreScroll =
+              false;
+          },
+          60
+        );
+
+      }
+
+    },
+    true
+  );
+
+}
+
+
+/*
+  這個監聽器寫在 enhancements.js 最後，
+  DOMContentLoaded 時 v11 會最後完成桌面接管。
+*/
+document.addEventListener(
+  "DOMContentLoaded",
+  setupSimpleDesktopBooksV11
+);
