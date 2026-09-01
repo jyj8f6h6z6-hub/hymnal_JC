@@ -1162,3 +1162,87 @@ button, input { font-family: inherit; }
     font-size: 15px !important;
   }
 }
+
+
+/* =========================================================
+   v6｜歌本封面裁切 + 畫面精簡
+========================================================= */
+
+/* 1. 有圖片的歌本：裁掉多餘白邊、放大主體、四角圓角 */
+.book-cover {
+  overflow: hidden !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+}
+
+.book-cover-image,
+.book-cover img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  border-radius: 14px !important;
+}
+
+/* 詩歌本、補充本、兒童詩歌再放大一點，讓視覺尺寸接近新歌頌詠 */
+.book-button[data-book="1"] .book-cover-image,
+.book-button[data-book="2"] .book-cover-image,
+.book-button[data-book="5"] .book-cover-image {
+  transform: scale(1.16);
+}
+
+.book-button[data-book="3"] .book-cover-image {
+  transform: scale(1);
+}
+
+/* 紅本、藍本維持原本文字封面，但圓角一致 */
+.book-text-cover {
+  border-radius: 14px !important;
+}
+
+/* 2. 左右滑動提示刪除 */
+.book-help {
+  display: none !important;
+}
+
+/* 3. 「目前詩歌本」提示刪除 */
+.number-book-hint,
+.number-section .section-hint,
+.number-section .number-hint {
+  display: none !important;
+}
+
+/* 4. 右上角四位數不顯示，但保留 DOM 給 JS 使用 */
+#numberDisplay {
+  display: none !important;
+}
+
+/* 5. 數字轉盤框內的歌本名稱放大 */
+#currentBookName {
+  display: block;
+  margin: 0 0 10px;
+  font-size: 26px !important;
+  font-weight: 900 !important;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--text-main);
+}
+
+@media (max-width: 700px) {
+  #currentBookName {
+    font-size: 27px !important;
+    margin-bottom: 10px;
+  }
+
+  .book-cover,
+  .book-cover-image,
+  .book-cover img {
+    border-radius: 13px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  #currentBookName {
+    font-size: 25px !important;
+  }
+}
