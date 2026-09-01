@@ -2025,3 +2025,127 @@ document.addEventListener(
   "DOMContentLoaded",
   setupSimpleDesktopBooksV11
 );
+
+
+/* =========================================================
+   v12｜桌面歌本點擊最終修正
+========================================================= */
+
+/*
+  v11 的問題：
+  前面 v7～v10 已經註冊過 capture 階段的 pointer/click 監聽器，
+  即使 v11 想接管，舊監聽器仍可能先 stopImmediatePropagation，
+  導致新的點擊程式根本收不到事件。
+
+  v12 不再讓 bookList 自己處理桌面點擊。
+  改由 document 在更上層統一接收 click，
+  找出被點擊的 .book-button，
+  直接執行 originalSelectBook。
+
+  桌面完全不使用任何 carousel / drag / center 邏輯。
+*/
+
+function setupDesktopBookClickV12() {
+
+  document.addEventListener(
+    "click",
+    event => {
+
+      if (
+        window.matchMedia(
+          "(max-width: 700px)"
+        ).matches
+      ) {
+        return;
+      }
+
+      const button =
+        event.target.closest(
+          "#bookList .book-button"
+        );
+
+      if (!button) {
+        return;
+      }
+
+      const bookId =
+        Number(
+          button.dataset.book
+        );
+
+      if (
+        !Number.isFinite(bookId)
+      ) {
+        return;
+      }
+
+      /*
+        直接切換歌本。
+        不置中、不捲動、不拖曳。
+      */
+      originalSelectBook(
+        bookId
+      );
+
+      /*
+        桌面永遠保持歌本列原位。
+      */
+      bookList.scrollLeft = 0;
+
+      event.preventDefault();
+
+    },
+    true
+  );
+
+}
+
+
+/*
+  為了避免舊 pointerdown 在 bookList 上先攔截，
+  桌面在 document capture 最上層阻止 pointer 事件
+  傳進 bookList 的舊拖曳程式，但保留瀏覽器後續 click。
+*/
+function disableOldDesktopBookDragV12() {
+
+  document.addEventListener(
+    "pointerdown",
+    event => {
+
+      if (
+        window.matchMedia(
+          "(max-width: 700px)"
+        ).matches
+      ) {
+        return;
+      }
+
+      const button =
+        event.target.closest(
+          "#bookList .book-button"
+        );
+
+      if (!button) {
+        return;
+      }
+
+      /*
+        不 preventDefault，否則 click 可能不產生。
+        只阻止事件繼續進入舊版 bookList pointer handler。
+      */
+      event.stopPropagation();
+
+    },
+    true
+  );
+
+}
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+    setupDesktopBookClickV12();
+    disableOldDesktopBookDragV12();
+  }
+);
