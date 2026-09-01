@@ -672,3 +672,493 @@ document.addEventListener(
   "DOMContentLoaded",
   setupBookCarouselV5
 );
+
+
+/* =========================================================
+   v7｜桌面歌本拖曳
+========================================================= */
+
+let bookPointerDragging = false;
+let bookPointerMoved = false;
+let bookPointerStartX = 0;
+let bookPointerStartScrollLeft = 0;
+let bookPointerId = null;
+
+
+function setupDesktopBookDrag() {
+
+  if (!bookList) {
+    return;
+  }
+
+  bookList.addEventListener(
+    "pointerdown",
+    event => {
+
+      /*
+        滑鼠左鍵、觸控筆可拖。
+        手機觸控仍交給原本的原生水平捲動。
+      */
+      if (
+        event.pointerType === "touch" ||
+        (
+          event.pointerType === "mouse" &&
+          event.button !== 0
+        )
+      ) {
+        return;
+      }
+
+      bookPointerDragging = true;
+      bookPointerMoved = false;
+      bookPointerStartX = event.clientX;
+      bookPointerStartScrollLeft = bookList.scrollLeft;
+      bookPointerId = event.pointerId;
+
+      bookList.classList.add(
+        "is-dragging"
+      );
+
+      try {
+        bookList.setPointerCapture(
+          event.pointerId
+        );
+      }
+      catch (error) {
+        /* 某些瀏覽器不支援時直接忽略 */
+      }
+
+      event.preventDefault();
+
+    }
+  );
+
+
+  bookList.addEventListener(
+    "pointermove",
+    event => {
+
+      if (
+        !bookPointerDragging ||
+        event.pointerId !== bookPointerId
+      ) {
+        return;
+      }
+
+      const delta =
+        event.clientX -
+        bookPointerStartX;
+
+      if (
+        Math.abs(delta) > 4
+      ) {
+        bookPointerMoved = true;
+      }
+
+      bookList.scrollLeft =
+        bookPointerStartScrollLeft -
+        delta;
+
+      event.preventDefault();
+
+    }
+  );
+
+
+  const finishDrag =
+    event => {
+
+      if (
+        !bookPointerDragging
+      ) {
+        return;
+      }
+
+      if (
+        event &&
+        bookPointerId !== null &&
+        event.pointerId !== bookPointerId
+      ) {
+        return;
+      }
+
+      bookPointerDragging = false;
+      bookPointerId = null;
+
+      bookList.classList.remove(
+        "is-dragging"
+      );
+
+      /*
+        放開滑鼠後，選最接近中央的歌本，
+        並精準吸附回中央。
+      */
+      requestAnimationFrame(
+        () => {
+          selectCenteredBook();
+        }
+      );
+
+      /*
+        防止「拖曳」被瀏覽器當成點擊歌本。
+      */
+      setTimeout(
+        () => {
+          bookPointerMoved = false;
+        },
+        80
+      );
+
+    };
+
+
+  bookList.addEventListener(
+    "pointerup",
+    finishDrag
+  );
+
+  bookList.addEventListener(
+    "pointercancel",
+    finishDrag
+  );
+
+  bookList.addEventListener(
+    "lostpointercapture",
+    finishDrag
+  );
+
+
+  bookList.addEventListener(
+    "click",
+    event => {
+
+      if (
+        bookPointerMoved
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+    },
+    true
+  );
+
+}
+
+
+
+/* =========================================================
+   v7｜歌詞字體手勢
+   - 雙指縮放只改字體
+   - 雙擊恢復預設
+========================================================= */
+
+const LYRICS_MIN_FONT = 18;
+const LYRICS_MAX_FONT = 46;
+
+let lyricsDefaultFont = null;
+let lyricsCurrentFont = null;
+let lyricsPinchStartDistance = null;
+let lyricsPinchStartFont = null;
+let lyricsLastTapTime = 0;
+
+
+function clampLyricsFont(value) {
+
+  return Math.max(
+    LYRICS_MIN_FONT,
+    Math.min(
+      LYRICS_MAX_FONT,
+      value
+    )
+  );
+
+}
+
+
+function getTouchDistance(touchA, touchB) {
+
+  return Math.hypot(
+    touchB.clientX -
+    touchA.clientX,
+    touchB.clientY -
+    touchA.clientY
+  );
+
+}
+
+
+function readCurrentLyricsFont() {
+
+  if (!hymnLyrics) {
+    return 26;
+  }
+
+  return parseFloat(
+    getComputedStyle(
+      hymnLyrics
+    ).fontSize
+  ) || 26;
+
+}
+
+
+function setLyricsFontSize(size) {
+
+  if (!hymnLyrics) {
+    return;
+  }
+
+  const safeSize =
+    clampLyricsFont(
+      size
+    );
+
+  lyricsCurrentFont =
+    safeSize;
+
+  hymnLyrics.style.setProperty(
+    "--lyrics-font-size",
+    `${safeSize}px`
+  );
+
+}
+
+
+function resetLyricsFontSize() {
+
+  if (!hymnLyrics) {
+    return;
+  }
+
+  /*
+    先移除自訂值，再重新讀 CSS 的預設字體。
+  */
+  hymnLyrics.style.removeProperty(
+    "--lyrics-font-size"
+  );
+
+  lyricsDefaultFont =
+    readCurrentLyricsFont();
+
+  lyricsCurrentFont =
+    lyricsDefaultFont;
+
+}
+
+
+function setupLyricsFontGestures() {
+
+  if (!hymnLyrics) {
+    return;
+  }
+
+
+  requestAnimationFrame(
+    () => {
+
+      lyricsDefaultFont =
+        readCurrentLyricsFont();
+
+      lyricsCurrentFont =
+        lyricsDefaultFont;
+
+    }
+  );
+
+
+  /*
+    iPhone / iPad：
+    在歌詞區兩指操作時阻止 Safari 的整頁縮放，
+    只改歌詞字體。
+  */
+  hymnLyrics.addEventListener(
+    "touchstart",
+    event => {
+
+      if (
+        event.touches.length === 2
+      ) {
+
+        lyricsPinchStartDistance =
+          getTouchDistance(
+            event.touches[0],
+            event.touches[1]
+          );
+
+        lyricsPinchStartFont =
+          lyricsCurrentFont ||
+          readCurrentLyricsFont();
+
+        hymnLyrics.classList.add(
+          "is-font-zooming"
+        );
+
+        event.preventDefault();
+        return;
+
+      }
+
+
+      if (
+        event.touches.length === 1
+      ) {
+
+        const now =
+          Date.now();
+
+        /*
+          手機雙點歌詞：恢復預設字體。
+        */
+        if (
+          now -
+          lyricsLastTapTime <
+          320
+        ) {
+
+          resetLyricsFontSize();
+          lyricsLastTapTime = 0;
+          event.preventDefault();
+
+        }
+        else {
+
+          lyricsLastTapTime =
+            now;
+
+        }
+
+      }
+
+    },
+    {
+      passive: false
+    }
+  );
+
+
+  hymnLyrics.addEventListener(
+    "touchmove",
+    event => {
+
+      if (
+        event.touches.length !== 2 ||
+        !lyricsPinchStartDistance ||
+        !lyricsPinchStartFont
+      ) {
+        return;
+      }
+
+      const distance =
+        getTouchDistance(
+          event.touches[0],
+          event.touches[1]
+        );
+
+      const ratio =
+        distance /
+        lyricsPinchStartDistance;
+
+      setLyricsFontSize(
+        lyricsPinchStartFont *
+        ratio
+      );
+
+      event.preventDefault();
+
+    },
+    {
+      passive: false
+    }
+  );
+
+
+  const finishLyricsPinch =
+    event => {
+
+      if (
+        event.touches &&
+        event.touches.length >= 2
+      ) {
+        return;
+      }
+
+      lyricsPinchStartDistance = null;
+      lyricsPinchStartFont = null;
+
+      hymnLyrics.classList.remove(
+        "is-font-zooming"
+      );
+
+    };
+
+
+  hymnLyrics.addEventListener(
+    "touchend",
+    finishLyricsPinch,
+    {
+      passive: true
+    }
+  );
+
+  hymnLyrics.addEventListener(
+    "touchcancel",
+    finishLyricsPinch,
+    {
+      passive: true
+    }
+  );
+
+
+  /*
+    桌面瀏覽器雙擊也可以還原字體。
+  */
+  hymnLyrics.addEventListener(
+    "dblclick",
+    event => {
+
+      resetLyricsFontSize();
+      event.preventDefault();
+
+    }
+  );
+
+
+  /*
+    Safari 有些版本會另外送 gesture 事件。
+    明確阻止整頁 pinch zoom。
+  */
+  ["gesturestart", "gesturechange", "gestureend"]
+    .forEach(
+      eventName => {
+
+        hymnLyrics.addEventListener(
+          eventName,
+          event => {
+            event.preventDefault();
+          },
+          {
+            passive: false
+          }
+        );
+
+      }
+    );
+
+}
+
+
+
+/* =========================================================
+   v7 初始化
+========================================================= */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    setupDesktopBookDrag();
+    setupLyricsFontGestures();
+
+  }
+);
