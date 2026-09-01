@@ -1523,3 +1523,49 @@ button, input { font-family: inherit; }
     cursor: grabbing;
   }
 }
+
+
+/* =========================================================
+   v8｜修正桌面版歌本轉盤
+========================================================= */
+
+/*
+  桌面版左右保留足夠的可捲動空間，
+  讓第一本與最後一本都能真正移到中央。
+*/
+@media (min-width: 701px) {
+
+  .book-list {
+    box-sizing: border-box;
+    padding-left: calc(50% - 95px) !important;
+    padding-right: calc(50% - 95px) !important;
+    scroll-padding-left: calc(50% - 95px) !important;
+    scroll-padding-right: calc(50% - 95px) !important;
+  }
+
+  .book-button {
+    scroll-snap-align: center !important;
+  }
+
+}
+
+
+/* =========================================================
+   v9｜數字轉盤區精簡
+   移除轉盤內的歌本名稱，避免與上方歌本區、下方歌曲資訊框重複
+========================================================= */
+
+#currentBookName {
+  display: none !important;
+}
+
+/* 歌本名稱移除後，讓數字轉盤區頂部更緊湊 */
+.number-section {
+  padding-top: 14px;
+}
+
+@media (max-width: 700px) {
+  .number-section {
+    padding-top: 12px;
+  }
+}

@@ -1162,3 +1162,342 @@ document.addEventListener(
 
   }
 );
+
+
+/* =========================================================
+   v8｜桌面歌本轉盤修正
+   問題：
+   1. 第一本文字無法拖回來
+   2. 點封面有時只移動畫面，沒有真正切換 selectedBook
+
+   修正策略：
+   - 點擊：明確先切換歌本，再把封面置中
+   - 拖曳：放開後才以中央封面決定歌本
+   - 置中改用 scrollIntoView，交給瀏覽器計算左右邊界
+========================================================= */
+
+let v8DesktopDragging = false;
+let v8DesktopMoved = false;
+let v8StartX = 0;
+let v8StartScrollLeft = 0;
+let v8PointerId = null;
+
+
+function v8CenterBookButton(
+  button,
+  behavior = "smooth"
+) {
+
+  if (!button) {
+    return;
+  }
+
+  bookCarouselIgnoreScroll = true;
+
+  button.scrollIntoView({
+    behavior,
+    block: "nearest",
+    inline: "center"
+  });
+
+  setTimeout(
+    () => {
+      bookCarouselIgnoreScroll = false;
+    },
+    behavior === "smooth" ? 320 : 60
+  );
+
+}
+
+
+function v8SelectBookButton(
+  button,
+  behavior = "smooth"
+) {
+
+  if (!button) {
+    return;
+  }
+
+  const bookId =
+    Number(
+      button.dataset.book
+    );
+
+  if (
+    !Number.isFinite(bookId)
+  ) {
+    return;
+  }
+
+  /*
+    關鍵：
+    不只移動封面，而是真正更新 selectedBook，
+    所以紅本、補充本、兒童詩歌等都會重新查歌。
+  */
+  originalSelectBook(
+    bookId
+  );
+
+  v8CenterBookButton(
+    button,
+    behavior
+  );
+
+}
+
+
+/*
+  覆寫 v5/v7 會使用的「中央歌本選擇」函式。
+*/
+selectCenteredBook = function() {
+
+  const button =
+    getCenteredBookButton();
+
+  if (!button) {
+    return;
+  }
+
+  v8SelectBookButton(
+    button,
+    "smooth"
+  );
+
+};
+
+
+function setupDesktopBookCarouselV8() {
+
+  if (!bookList) {
+    return;
+  }
+
+
+  /*
+    先強制把預設「詩歌本」放回中央。
+    這也解決重新整理後畫面停在紅本附近的問題。
+  */
+  requestAnimationFrame(
+    () => {
+      requestAnimationFrame(
+        () => {
+
+          const initialButton =
+            bookList.querySelector(
+              `.book-button[data-book="${Number(selectedBook)}"]`
+            );
+
+          v8CenterBookButton(
+            initialButton,
+            "auto"
+          );
+
+        }
+      );
+    }
+  );
+
+
+  /*
+    用 capture 攔截桌面版點擊。
+    這樣不再依賴舊版 button click 的執行順序。
+  */
+  bookList.addEventListener(
+    "click",
+    event => {
+
+      if (
+        window.matchMedia(
+          "(max-width: 700px)"
+        ).matches
+      ) {
+        return;
+      }
+
+      const button =
+        event.target.closest(
+          ".book-button"
+        );
+
+      if (!button) {
+        return;
+      }
+
+      /*
+        剛剛是拖曳，不當成點擊。
+      */
+      if (
+        v8DesktopMoved
+      ) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      v8SelectBookButton(
+        button,
+        "smooth"
+      );
+
+    },
+    true
+  );
+
+
+  /*
+    v8 自己管理桌面滑鼠拖曳。
+    stopImmediatePropagation 可避免 v7 的舊拖曳處理同時執行。
+  */
+  bookList.addEventListener(
+    "pointerdown",
+    event => {
+
+      if (
+        event.pointerType === "touch" ||
+        (
+          event.pointerType === "mouse" &&
+          event.button !== 0
+        )
+      ) {
+        return;
+      }
+
+      v8DesktopDragging = true;
+      v8DesktopMoved = false;
+      v8StartX = event.clientX;
+      v8StartScrollLeft = bookList.scrollLeft;
+      v8PointerId = event.pointerId;
+
+      bookList.classList.add(
+        "is-dragging"
+      );
+
+      try {
+        bookList.setPointerCapture(
+          event.pointerId
+        );
+      }
+      catch (error) {}
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+    },
+    true
+  );
+
+
+  bookList.addEventListener(
+    "pointermove",
+    event => {
+
+      if (
+        !v8DesktopDragging ||
+        event.pointerId !== v8PointerId
+      ) {
+        return;
+      }
+
+      const delta =
+        event.clientX -
+        v8StartX;
+
+      if (
+        Math.abs(delta) >= 5
+      ) {
+        v8DesktopMoved = true;
+      }
+
+      bookList.scrollLeft =
+        v8StartScrollLeft -
+        delta;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+    },
+    true
+  );
+
+
+  const finish =
+    event => {
+
+      if (
+        !v8DesktopDragging
+      ) {
+        return;
+      }
+
+      if (
+        event &&
+        v8PointerId !== null &&
+        event.pointerId !== v8PointerId
+      ) {
+        return;
+      }
+
+      v8DesktopDragging = false;
+      v8PointerId = null;
+
+      bookList.classList.remove(
+        "is-dragging"
+      );
+
+      if (
+        v8DesktopMoved
+      ) {
+
+        const centered =
+          getCenteredBookButton();
+
+        v8SelectBookButton(
+          centered,
+          "smooth"
+        );
+
+      }
+
+      /*
+        保留一小段時間，吃掉 pointerup 後瀏覽器補送的 click。
+      */
+      setTimeout(
+        () => {
+          v8DesktopMoved = false;
+        },
+        180
+      );
+
+      if (event) {
+        event.stopImmediatePropagation();
+      }
+
+    };
+
+
+  bookList.addEventListener(
+    "pointerup",
+    finish,
+    true
+  );
+
+  bookList.addEventListener(
+    "pointercancel",
+    finish,
+    true
+  );
+
+}
+
+
+/*
+  v8 放在最後初始化。
+*/
+document.addEventListener(
+  "DOMContentLoaded",
+  setupDesktopBookCarouselV8
+);
