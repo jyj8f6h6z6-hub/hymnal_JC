@@ -1,953 +1,357 @@
-/* =========================
-   主題配色
-========================= */
+/* =========================================================
+   詩歌數字轉盤｜精簡跨年齡版
+   重點：
+   1. 首頁資訊減量
+   2. 點擊區域放大
+   3. 滾輪維持 70px × 3 = 210px，避免影響 app.js 計算
+   4. 手機優先，但桌面也保持清楚
+========================================================= */
 
 :root {
-  --page-bg-1: #f1f5f9;
-  --page-bg-2: #e2e8f0;
+  --page-bg-1: #f3f6f9;
+  --page-bg-2: #e7edf3;
 
-  --panel-bg: rgba(255, 255, 255, 0.92);
+  --panel-bg: rgba(255, 255, 255, 0.94);
   --card-bg: #ffffff;
   --button-bg: #ffffff;
-  --button-active-bg: #f8fafc;
+  --button-active-bg: #f4f7fa;
 
-  --text-main: #162033;
-  --text-lyrics: #1b2638;
-  --text-muted: #5d6b7d;
-  --text-soft: #98a2b3;
+  --text-main: #172033;
+  --text-lyrics: #202a3b;
+  --text-muted: #5f6e80;
+  --text-soft: #95a0ae;
 
-  --border-color: #e5e7eb;
-  --divider-color: #eaecf0;
-  --soft-bg: #f2f4f7;
+  --border-color: #dfe5eb;
+  --divider-color: #e8edf2;
+  --soft-bg: #eef2f6;
 
-  --selection-bg: rgba(23, 32, 51, 0.045);
-  --selection-line: rgba(23, 32, 51, 0.08);
+  --selection-bg: rgba(23, 32, 51, 0.055);
+  --selection-line: rgba(23, 32, 51, 0.10);
 
   --strong-bg: #172033;
   --strong-text: #ffffff;
 
-  --wheel-normal: #a0a8b6;
+  --wheel-normal: #9aa5b3;
   --wheel-selected: #101828;
 
   --fade-top:
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.96),
-      rgba(255, 255, 255, 0)
-    );
-
+    linear-gradient(to bottom, rgba(255,255,255,.98), rgba(255,255,255,0));
   --fade-bottom:
-    linear-gradient(
-      to top,
-      rgba(255, 255, 255, 0.96),
-      rgba(255, 255, 255, 0)
-    );
+    linear-gradient(to top, rgba(255,255,255,.98), rgba(255,255,255,0));
 
-  --shadow:
-    0 12px 35px rgba(15, 23, 42, 0.07);
-
-  --card-shadow:
-    0 18px 50px rgba(15, 23, 42, 0.08);
+  --shadow: 0 8px 28px rgba(15, 23, 42, 0.055);
+  --card-shadow: 0 18px 50px rgba(15, 23, 42, 0.075);
 }
 
-
-/* =========================
-   米白紙張
-========================= */
-
+/* 米白 */
 body[data-theme="paper"] {
   --page-bg-1: #f8f4ec;
   --page-bg-2: #efe7d8;
-
-  --panel-bg: rgba(255, 253, 248, 0.95);
+  --panel-bg: rgba(255, 253, 248, 0.96);
   --card-bg: #fffdf8;
   --button-bg: #fffdf8;
   --button-active-bg: #f6efe5;
-
   --text-main: #40362c;
   --text-lyrics: #40362c;
   --text-muted: #897766;
   --text-soft: #a39280;
-
   --border-color: #e8ddce;
   --divider-color: #eadfce;
   --soft-bg: #f4ede3;
-
   --selection-bg: rgba(91, 72, 54, 0.07);
   --selection-line: rgba(91, 72, 54, 0.12);
-
   --strong-bg: #5b4836;
-  --strong-text: #ffffff;
-
+  --strong-text: #fff;
   --wheel-normal: #a89989;
   --wheel-selected: #40362c;
-
-  --fade-top:
-    linear-gradient(
-      to bottom,
-      rgba(255, 253, 248, 0.97),
-      rgba(255, 253, 248, 0)
-    );
-
-  --fade-bottom:
-    linear-gradient(
-      to top,
-      rgba(255, 253, 248, 0.97),
-      rgba(255, 253, 248, 0)
-    );
+  --fade-top: linear-gradient(to bottom, rgba(255,253,248,.98), rgba(255,253,248,0));
+  --fade-bottom: linear-gradient(to top, rgba(255,253,248,.98), rgba(255,253,248,0));
 }
 
-
-/* =========================
-   護眼綠
-========================= */
-
+/* 護眼 */
 body[data-theme="green"] {
   --page-bg-1: #e7ece6;
   --page-bg-2: #d7dfd6;
-
-  --panel-bg: rgba(245, 248, 244, 0.96);
+  --panel-bg: rgba(245, 248, 244, 0.97);
   --card-bg: #f5f8f4;
   --button-bg: #f2f6f1;
   --button-active-bg: #e1eee2;
-
   --text-main: #33453a;
   --text-lyrics: #33453a;
   --text-muted: #68786e;
   --text-soft: #829487;
-
   --border-color: #cddfcf;
   --divider-color: #d4e3d5;
   --soft-bg: #e4efe5;
-
   --selection-bg: rgba(41, 66, 52, 0.10);
   --selection-line: rgba(41, 66, 52, 0.17);
-
   --strong-bg: #3f624c;
-  --strong-text: #ffffff;
-
+  --strong-text: #fff;
   --wheel-normal: #789082;
   --wheel-selected: #20372a;
-
-  --fade-top:
-    linear-gradient(
-      to bottom,
-      rgba(247, 251, 247, 0.98),
-      rgba(247, 251, 247, 0)
-    );
-
-  --fade-bottom:
-    linear-gradient(
-      to top,
-      rgba(247, 251, 247, 0.98),
-      rgba(247, 251, 247, 0)
-    );
+  --fade-top: linear-gradient(to bottom, rgba(247,251,247,.98), rgba(247,251,247,0));
+  --fade-bottom: linear-gradient(to top, rgba(247,251,247,.98), rgba(247,251,247,0));
 }
 
-
-/* =========================
-   暖粉
-========================= */
-
+/* 暖粉 */
 body[data-theme="pink"] {
   --page-bg-1: #f8e8ea;
   --page-bg-2: #f0dadd;
-
-  --panel-bg: rgba(255, 247, 248, 0.96);
+  --panel-bg: rgba(255, 247, 248, 0.97);
   --card-bg: #fff8f9;
   --button-bg: #fff6f7;
   --button-active-bg: #f5e1e4;
-
   --text-main: #533b40;
   --text-lyrics: #533b40;
   --text-muted: #89686f;
   --text-soft: #a88d93;
-
   --border-color: #e7cfd3;
   --divider-color: #ead7da;
   --soft-bg: #f5e5e8;
-
   --selection-bg: rgba(83, 59, 64, 0.09);
   --selection-line: rgba(83, 59, 64, 0.16);
-
   --strong-bg: #8b5e68;
-  --strong-text: #ffffff;
-
+  --strong-text: #fff;
   --wheel-normal: #a7868d;
   --wheel-selected: #4b3338;
-
-  --fade-top:
-    linear-gradient(
-      to bottom,
-      rgba(255, 248, 249, 0.98),
-      rgba(255, 248, 249, 0)
-    );
-
-  --fade-bottom:
-    linear-gradient(
-      to top,
-      rgba(255, 248, 249, 0.98),
-      rgba(255, 248, 249, 0)
-    );
+  --fade-top: linear-gradient(to bottom, rgba(255,248,249,.98), rgba(255,248,249,0));
+  --fade-bottom: linear-gradient(to top, rgba(255,248,249,.98), rgba(255,248,249,0));
 }
 
-
-/* =========================
-   夜間模式
-========================= */
-
+/* 夜間 */
 body[data-theme="dark"] {
   --page-bg-1: #171b20;
   --page-bg-2: #101419;
-
-  --panel-bg: rgba(32, 38, 45, 0.96);
+  --panel-bg: rgba(32, 38, 45, 0.97);
   --card-bg: #20262d;
   --button-bg: #272e36;
   --button-active-bg: #313a44;
-
   --text-main: #f2f5f7;
   --text-lyrics: #e8edf2;
   --text-muted: #a7b0ba;
   --text-soft: #89949f;
-
   --border-color: #343d47;
   --divider-color: #39434d;
   --soft-bg: #2a323b;
-
   --selection-bg: rgba(255, 255, 255, 0.07);
   --selection-line: rgba(255, 255, 255, 0.11);
-
   --strong-bg: #e6ebef;
   --strong-text: #172033;
-
   --wheel-normal: #87929d;
-  --wheel-selected: #ffffff;
-
-  --fade-top:
-    linear-gradient(
-      to bottom,
-      rgba(32, 38, 45, 0.97),
-      rgba(32, 38, 45, 0)
-    );
-
-  --fade-bottom:
-    linear-gradient(
-      to top,
-      rgba(32, 38, 45, 0.97),
-      rgba(32, 38, 45, 0)
-    );
-
-  --shadow:
-    0 12px 35px rgba(0, 0, 0, 0.22);
-
-  --card-shadow:
-    0 18px 50px rgba(0, 0, 0, 0.28);
+  --wheel-selected: #fff;
+  --fade-top: linear-gradient(to bottom, rgba(32,38,45,.98), rgba(32,38,45,0));
+  --fade-bottom: linear-gradient(to top, rgba(32,38,45,.98), rgba(32,38,45,0));
+  --shadow: 0 8px 28px rgba(0,0,0,.20);
+  --card-shadow: 0 18px 50px rgba(0,0,0,.28);
 }
 
-
-/* =========================
-   基本設定
-========================= */
-
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
-
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    "Noto Sans TC",
-    "Microsoft JhengHei",
-    sans-serif;
-
-  background:
-    linear-gradient(
-      180deg,
-      var(--page-bg-1) 0%,
-      var(--page-bg-2) 100%
-    );
-
-  color: var(--text-main);
-
   min-height: 100vh;
-
-  transition:
-    background 0.25s ease,
-    color 0.25s ease;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  background: linear-gradient(180deg, var(--page-bg-1), var(--page-bg-2));
+  color: var(--text-main);
+  transition: background .2s ease, color .2s ease;
 }
 
-
-/* =========================
-   APP
-========================= */
+button, input { font-family: inherit; }
 
 .app {
-  width: min(100%, 900px);
-
+  width: min(100%, 860px);
   margin: 0 auto;
-
   padding:
-    max(24px, env(safe-area-inset-top))
-    18px
-    max(60px, env(safe-area-inset-bottom));
+    max(18px, env(safe-area-inset-top))
+    14px
+    max(54px, env(safe-area-inset-bottom));
 }
 
-
-/* =========================
-   頁首
-========================= */
-
+/* 頁首 */
 .header {
   display: flex;
-
   justify-content: space-between;
-
   align-items: center;
-
-  gap: 18px;
-
-  margin-bottom: 30px;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 0 2px;
 }
 
-.eyebrow {
-  font-size: 12px;
-
-  font-weight: 800;
-
-  letter-spacing: 4px;
-
-  color: var(--text-muted);
-
-  margin-bottom: 5px;
-}
-
-.header h1 {
+.brand h1 {
   margin: 0;
-
-  font-size:
-    clamp(30px, 6vw, 46px);
-
-  line-height: 1;
-
+  font-size: clamp(30px, 6vw, 42px);
+  line-height: 1.05;
   letter-spacing: -1px;
-
-  color: var(--text-main);
 }
 
-
-/* =========================
-   主題按鈕
-========================= */
+.brand-subtitle {
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
 
 .theme-button {
   appearance: none;
-
   flex-shrink: 0;
-
-  border:
-    1px solid var(--border-color);
-
-  background: var(--card-bg);
-
-  color: var(--text-main);
-
-  min-height: 44px;
-
-  padding:
-    8px 14px;
-
+  min-height: 46px;
+  border: 1px solid var(--border-color);
   border-radius: 999px;
-
+  background: var(--card-bg);
+  color: var(--text-main);
+  padding: 8px 14px;
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   gap: 7px;
-
-  font-family: inherit;
-
   font-size: 14px;
-
   font-weight: 800;
-
   cursor: pointer;
-
-  box-shadow:
-    0 4px 14px rgba(15, 23, 42, 0.06);
-
-  transition:
-    transform 0.15s ease,
-    background 0.25s ease,
-    color 0.25s ease,
-    border-color 0.25s ease;
+  box-shadow: 0 3px 12px rgba(15,23,42,.05);
 }
 
-.theme-button:active {
-  transform: scale(0.96);
-}
+.theme-button:active { transform: scale(.97); }
 
-
-/* =========================
-   區塊
-========================= */
-
+/* 共用卡片 */
 .book-section,
+.search-section,
 .number-section {
   background: var(--panel-bg);
-
-  border:
-    1px solid var(--border-color);
-
-  border-radius: 24px;
-
-  padding: 20px;
-
-  margin-bottom: 18px;
-
-  box-shadow:
-    var(--shadow);
-
-  transition:
-    background 0.25s ease,
-    border-color 0.25s ease;
+  border: 1px solid var(--border-color);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
 }
 
-.section-title {
-  font-size: 14px;
-
-  font-weight: 800;
-
-  color: var(--text-muted);
-
-  letter-spacing: 0.5px;
+/* 歌本：拿掉「選擇詩歌本」標題，直接看到選項 */
+.book-section {
+  padding: 12px;
+  margin-bottom: 12px;
 }
-
-
-/* =========================
-   歌本選擇區
-========================= */
 
 .book-list {
   display: grid;
-
-  grid-template-columns:
-    repeat(6, 1fr);
-
-  gap: 12px;
-
-  margin-top: 16px;
-
-  width: 100%;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 9px;
 }
-
-
-/* 每一本歌本 */
 
 .book-button {
   appearance: none;
-
-  border:
-    1px solid var(--border-color);
-
-  background:
-    var(--button-bg);
-
-  color:
-    var(--text-main);
-
-  border-radius: 16px;
-
-  padding: 10px 6px;
-
   min-width: 0;
-
+  min-height: 78px;
+  border: 1px solid transparent;
+  border-radius: 15px;
+  background: transparent;
+  color: var(--text-main);
+  padding: 7px 5px;
   cursor: pointer;
-
   display: flex;
-
   flex-direction: column;
-
   align-items: center;
-
-  justify-content: flex-start;
-
-  gap: 8px;
-
-  overflow: hidden;
-
-  font-family: inherit;
-
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease,
-    background 0.25s ease,
-    color 0.25s ease;
+  justify-content: center;
+  gap: 6px;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
 }
 
-@media (hover: hover) {
-
-  .book-button:hover {
-    transform: translateY(-3px);
-
-    box-shadow:
-      0 8px 20px
-      rgba(0, 0, 0, 0.08);
-  }
-
-}
-
-
-/* 選中的歌本 */
+.book-button:active { transform: scale(.97); }
 
 .book-button.active {
-  border:
-    2px solid var(--text-main);
-
-  background:
-    var(--button-active-bg);
-
-  box-shadow:
-    0 8px 20px
-    rgba(23, 32, 51, 0.13);
+  background: var(--button-active-bg);
+  border-color: var(--text-muted);
+  box-shadow: inset 0 0 0 1px var(--selection-line);
 }
-
-
-/* 書封 */
 
 .book-cover {
-  width: 76px;
-
-  height: 100px;
-
-  max-width: 100%;
-
-  border-radius: 8px;
-
+  width: 42px;
+  height: 54px;
+  border-radius: 6px;
   overflow: hidden;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  background:
-    var(--soft-bg);
-
+  background: var(--soft-bg);
+  box-shadow: 0 2px 6px rgba(0,0,0,.12);
   flex-shrink: 0;
-
-  box-shadow:
-    0 3px 8px
-    rgba(0, 0, 0, 0.12);
 }
-
-
-/* 真正書封圖片 */
 
 .book-cover img,
 .book-cover-image {
   display: block;
-
   width: 100% !important;
-
   height: 100% !important;
-
-  max-width: 100% !important;
-
-  max-height: 100% !important;
-
   object-fit: cover;
-
-  margin: 0;
-
-  padding: 0;
 }
-
-
-/* 紅本、藍本文字封面 */
 
 .book-text-cover {
   width: 100%;
-
   height: 100%;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  padding: 8px;
-
+  display: grid;
+  place-items: center;
+  padding: 4px;
   text-align: center;
-
-  font-size: 16px;
-
-  font-weight: 800;
-
-  line-height: 1.3;
-
-  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  color: #fff;
 }
 
-
-/* 紅本 */
-
-.book-button[data-book="4"]
-.book-text-cover {
-  background:
-    linear-gradient(
-      145deg,
-      #F8CBAD,
-      #F3B99A
-    );
-
+.book-button[data-book="4"] .book-text-cover {
+  background: linear-gradient(145deg, #F8CBAD, #F3B99A);
   color: #5a3a32;
 }
 
-
-/* 藍本 */
-
-.book-button[data-book="6"]
-.book-text-cover {
-  background:
-    linear-gradient(
-      145deg,
-      #296da8,
-      #173f69
-    );
-
-  color: #ffffff;
+.book-button[data-book="6"] .book-text-cover {
+  background: linear-gradient(145deg, #296da8, #173f69);
+  color: #fff;
 }
-
-
-/* 歌本名稱 */
 
 .book-name {
   width: 100%;
-
-  font-size: 13px;
-
+  color: var(--text-main);
+  font-size: 12px;
   font-weight: 800;
-
-  line-height: 1.35;
-
-  text-align: center;
-
-  color: var(--text-main);
-
-  white-space: normal;
-}
-
-
-/* =========================
-   歌號頂部
-========================= */
-
-.number-header {
-  display: flex;
-
-  justify-content: space-between;
-
-  align-items: center;
-
-  gap: 15px;
-
-  margin-bottom: 12px;
-}
-
-.current-book-name {
-  margin-top: 5px;
-
-  font-size: 22px;
-
-  font-weight: 850;
-
-  color: var(--text-main);
-}
-
-.number-display {
-  flex-shrink: 0;
-
-  font-size:
-    clamp(30px, 7vw, 48px);
-
-  font-weight: 850;
-
-  font-variant-numeric:
-    tabular-nums;
-
-  letter-spacing: 4px;
-
-  color: var(--text-main);
-}
-
-
-/* =========================
-   滾輪
-========================= */
-
-.wheel-panel {
-  position: relative;
-
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, 1fr);
-
-  gap: 6px;
-
-  max-width: 520px;
-
-  margin: 0 auto;
-
-  padding: 6px;
-}
-
-.wheel-column {
-  position: relative;
-
-  min-width: 0;
-
+  line-height: 1.25;
   text-align: center;
 }
 
-
-/* 滾輪本體 */
-
-.wheel {
-  height: 210px;
-
-  overflow-y: scroll;
-
-  scroll-snap-type:
-    y mandatory;
-
-  overscroll-behavior-y:
-    contain;
-
-  scroll-behavior:
-    smooth;
-
-  scrollbar-width:
-    none;
-
-  -ms-overflow-style:
-    none;
-
-  touch-action:
-    pan-y;
-
-  -webkit-overflow-scrolling:
-    touch;
-
-  position: relative;
-
-  z-index: 2;
-}
-
-.wheel::-webkit-scrollbar {
-  display: none;
-}
-
-
-/* 每格固定 70px */
-
-.wheel-option {
-  height: 70px;
-
-  display: flex;
-
-  justify-content: center;
-
-  align-items: center;
-
-  scroll-snap-align:
-    center;
-
-  scroll-snap-stop:
-    always;
-
-  font-size:
-    clamp(31px, 8vw, 50px);
-
-  font-weight: 500;
-
-  color:
-    var(--wheel-normal);
-
-  font-variant-numeric:
-    tabular-nums;
-
-  opacity: 0.42;
-
-  transition:
-    transform 0.12s ease,
-    opacity 0.12s ease,
-    color 0.12s ease;
-
-  user-select: none;
-}
-
-
-/* 中央選中的數字 */
-
-.wheel-option.selected {
-  color:
-    var(--wheel-selected);
-
-  font-weight: 900;
-
-  transform:
-    scale(1.14);
-
-  opacity: 1;
-}
-
-
-/* 上下留白 */
-
-.wheel-padding {
-  height: 70px;
-
-  pointer-events: none;
-}
-
-
-/* 中間選取框 */
-
-.selection-window {
-  position: absolute;
-
-  z-index: 1;
-
-  pointer-events: none;
-
-  left: 4px;
-
-  right: 4px;
-
-  top: 76px;
-
-  height: 70px;
-
-  border-radius: 16px;
-
-  background:
-    var(--selection-bg);
-
-  border-top:
-    1px solid
-    var(--selection-line);
-
-  border-bottom:
-    1px solid
-    var(--selection-line);
-}
-
-
-/* 滾輪上下淡出 */
-
-.wheel-column::before,
-.wheel-column::after {
-  content: "";
-
-  position: absolute;
-
-  z-index: 3;
-
-  pointer-events: none;
-
-  left: 0;
-
-  right: 0;
-
-  height: 65px;
-}
-
-.wheel-column::before {
-  top: 0;
-
-  background:
-    var(--fade-top);
-}
-
-.wheel-column::after {
-  bottom: 24px;
-
-  background:
-    var(--fade-bottom);
-}
-
-.wheel-label {
-  display: none;
-}
-
-
-/* =========================
-   搜尋詩歌
-========================= */
-
+/* 搜尋：變成單一、直接的輸入框 */
 .search-section {
-  background: var(--panel-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 24px;
-  padding: 20px;
-  margin-bottom: 18px;
-  box-shadow: var(--shadow);
-  transition:
-    background 0.25s ease,
-    border-color 0.25s ease;
+  padding: 12px;
+  margin-bottom: 12px;
 }
 
 .search-box {
   position: relative;
   display: flex;
   align-items: center;
-  margin-top: 14px;
 }
 
 .search-icon {
   position: absolute;
-  left: 15px;
+  left: 16px;
   z-index: 1;
   color: var(--text-soft);
-  font-size: 23px;
+  font-size: 25px;
   line-height: 1;
   pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  min-height: 52px;
+  min-height: 56px;
   border: 1px solid var(--border-color);
   border-radius: 16px;
   background: var(--card-bg);
   color: var(--text-main);
-  padding: 12px 48px 12px 46px;
-  font: inherit;
-  font-size: 16px;
+  padding: 13px 50px 13px 48px;
+  font-size: 17px;
   outline: none;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.25s ease;
 }
 
-.search-input::placeholder {
-  color: var(--text-soft);
-}
+.search-input::placeholder { color: var(--text-soft); }
 
 .search-input:focus {
   border-color: var(--text-muted);
@@ -956,7 +360,7 @@ body {
 
 .search-clear {
   position: absolute;
-  right: 8px;
+  right: 9px;
   width: 38px;
   height: 38px;
   border: 0;
@@ -969,7 +373,7 @@ body {
 }
 
 .search-summary {
-  margin-top: 12px;
+  margin: 10px 4px 0;
   color: var(--text-muted);
   font-size: 13px;
   font-weight: 700;
@@ -978,45 +382,31 @@ body {
 .search-results {
   display: grid;
   gap: 8px;
-  margin-top: 10px;
-  max-height: 440px;
+  margin-top: 9px;
+  max-height: 420px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-right: 2px;
 }
 
 .search-result {
   width: 100%;
   appearance: none;
+  min-height: 64px;
   border: 1px solid var(--border-color);
   border-radius: 14px;
   background: var(--button-bg);
   color: var(--text-main);
-  padding: 12px 14px;
+  padding: 11px 13px;
   text-align: left;
-  font-family: inherit;
   cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    border-color 0.2s ease,
-    background 0.25s ease;
 }
 
-@media (hover: hover) {
-  .search-result:hover {
-    transform: translateY(-1px);
-    border-color: var(--text-soft);
-  }
-}
-
-.search-result:active {
-  transform: scale(0.99);
-}
+.search-result:active { transform: scale(.99); }
 
 .search-result-top {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   margin-bottom: 5px;
 }
 
@@ -1039,1060 +429,489 @@ body {
 
 .search-result-title {
   color: var(--text-main);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 850;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 .search-no-result {
-  padding: 22px 10px 6px;
+  padding: 20px 8px 6px;
   text-align: center;
   color: var(--text-soft);
   font-size: 14px;
 }
 
-
-/* =========================
-   詩歌區
-========================= */
-
-.hymn-area {
-  margin-top: 24px;
-
-  padding-bottom: 80px;
+/* 歌號：首頁視覺主角 */
+.number-section {
+  padding: 16px 16px 12px;
+  margin-bottom: 14px;
 }
 
+.number-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 2px;
+}
 
-/* 詩歌卡片 */
+.number-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.current-book-name {
+  margin-top: 3px;
+  color: var(--text-main);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.number-display {
+  flex-shrink: 0;
+  color: var(--text-main);
+  font-size: clamp(32px, 7vw, 46px);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 3px;
+  line-height: 1;
+}
+
+/* 滾輪
+   app.js ITEM_HEIGHT = 70
+   所以務必維持每格 70px、視窗 210px */
+.wheel-panel {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  max-width: 520px;
+  margin: 2px auto 0;
+  padding: 6px 4px;
+}
+
+.wheel-column {
+  position: relative;
+  min-width: 0;
+  text-align: center;
+}
+
+.wheel {
+  position: relative;
+  z-index: 2;
+  height: 210px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.wheel::-webkit-scrollbar { display: none; }
+
+.wheel-option {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  color: var(--wheel-normal);
+  font-size: clamp(31px, 8vw, 48px);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  opacity: .38;
+  user-select: none;
+  transition: transform .12s ease, opacity .12s ease, color .12s ease;
+}
+
+.wheel-option.selected {
+  color: var(--wheel-selected);
+  font-weight: 900;
+  transform: scale(1.13);
+  opacity: 1;
+}
+
+.wheel-padding {
+  height: 70px;
+  pointer-events: none;
+}
+
+.selection-window {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  left: 4px;
+  right: 4px;
+  top: 76px;
+  height: 70px;
+  border-radius: 16px;
+  background: var(--selection-bg);
+  border-top: 1px solid var(--selection-line);
+  border-bottom: 1px solid var(--selection-line);
+}
+
+.wheel-column::before,
+.wheel-column::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  left: 0;
+  right: 0;
+  height: 65px;
+}
+
+.wheel-column::before {
+  top: 0;
+  background: var(--fade-top);
+}
+
+.wheel-column::after {
+  bottom: 0;
+  background: var(--fade-bottom);
+}
+
+.wheel-help {
+  margin-top: -2px;
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* 詩歌內容 */
+.hymn-area {
+  margin-top: 14px;
+  padding-bottom: 70px;
+}
 
 .hymn-card {
   width: 100%;
-
   max-width: 820px;
-
   margin: 0 auto;
-
-  background:
-    var(--card-bg);
-
-  border:
-    1px solid
-    var(--border-color);
-
-  border-radius: 26px;
-
-  padding:
-    clamp(24px, 5vw, 42px);
-
-  box-shadow:
-    var(--card-shadow);
-
-  animation:
-    hymnIn 0.22s ease;
-
-  transition:
-    background 0.25s ease,
-    border-color 0.25s ease;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  padding: clamp(24px, 5vw, 40px);
+  box-shadow: var(--card-shadow);
+  animation: hymnIn .18s ease;
 }
-
 
 @keyframes hymnIn {
-
-  from {
-    opacity: 0;
-
-    transform:
-      translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-
-    transform:
-      translateY(0);
-  }
-
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
-
-/* 標題區 */
 
 .hymn-top {
   display: flex;
-
-  justify-content:
-    space-between;
-
-  align-items:
-    flex-start;
-
-  gap: 20px;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
 }
-
-
-/* 歌本標籤 */
 
 .hymn-book {
   display: inline-block;
-
-  margin-bottom: 10px;
-
-  padding:
-    5px 10px;
-
-  border-radius:
-    999px;
-
-  background:
-    var(--soft-bg);
-
-  color:
-    var(--text-muted);
-
+  margin-bottom: 9px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--soft-bg);
+  color: var(--text-muted);
   font-size: 13px;
-
   font-weight: 800;
 }
 
-
-/* 詩歌標題 */
-
 .hymn-title {
   margin: 0;
-
-  font-size:
-    clamp(28px, 5vw, 42px);
-
-  line-height: 1.3;
-
-  letter-spacing:
-    0.01em;
-
-  color:
-    var(--text-main);
-
+  color: var(--text-main);
+  font-size: clamp(28px, 5vw, 41px);
   font-weight: 900;
+  line-height: 1.3;
 }
-
-
-/* 歌號 */
 
 .hymn-number {
   flex-shrink: 0;
-
   min-width: 88px;
-
   text-align: center;
-
-  padding:
-    10px 14px;
-
+  padding: 10px 14px;
   border-radius: 14px;
-
-  background:
-    var(--strong-bg);
-
-  color:
-    var(--strong-text);
-
+  background: var(--strong-bg);
+  color: var(--strong-text);
   font-size: 18px;
-
   font-weight: 900;
-
-  font-variant-numeric:
-    tabular-nums;
+  font-variant-numeric: tabular-nums;
 }
-
-
-/* 分隔線 */
 
 .divider {
   height: 1px;
-
-  background:
-    var(--divider-color);
-
-  margin:
-    26px 0 28px;
+  margin: 24px 0 26px;
+  background: var(--divider-color);
 }
-
-
-/* 歌詞 */
 
 .hymn-lyrics {
-  white-space:
-    pre-wrap;
-
-  overflow-wrap:
-    break-word;
-
-  font-size:
-    clamp(22px, 4vw, 30px);
-
-  line-height: 1.9;
-
-  letter-spacing:
-    0.035em;
-
-  color:
-    var(--text-lyrics);
-
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  color: var(--text-lyrics);
+  font-size: clamp(22px, 4vw, 30px);
   font-weight: 500;
+  line-height: 1.9;
+  letter-spacing: .035em;
 }
 
-
-/* =========================
-   空白 / 找不到
-========================= */
-
+/* 空白 / 找不到 */
 .empty-state,
 .not-found {
   text-align: center;
-
-  padding:
-    60px 20px;
-
-  color:
-    var(--text-soft);
+  padding: 42px 20px;
+  color: var(--text-soft);
 }
 
 .empty-icon {
-  font-size: 45px;
-
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  font-size: 38px;
 }
 
 .empty-title,
 .not-found-title {
-  color:
-    var(--text-muted);
-
-  font-size: 21px;
-
-  font-weight: 800;
-
-  margin-bottom: 6px;
+  margin-bottom: 5px;
+  color: var(--text-muted);
+  font-size: 19px;
+  font-weight: 850;
 }
 
 .empty-text,
-.not-found-text {
-  font-size: 14px;
-}
+.not-found-text { font-size: 14px; }
 
 .not-found-number {
-  font-size: 50px;
-
-  font-weight: 850;
-
+  margin-bottom: 8px;
+  color: var(--text-soft);
+  font-size: 44px;
+  font-weight: 900;
   letter-spacing: 3px;
-
-  color:
-    var(--text-soft);
-
-  margin-bottom: 10px;
 }
 
-.hidden {
-  display:
-    none !important;
-}
+.hidden { display: none !important; }
 
+/* 手機詩歌橫向轉盤 */
+.hymn-carousel { display: none; }
 
-/* =========================
-   手機
-========================= */
-
-@media (max-width: 650px) {
-
+@media (max-width: 700px) {
   .app {
-    padding-left: 12px;
-
-    padding-right: 12px;
+    padding-left: 10px;
+    padding-right: 10px;
   }
-
 
   .header {
-    margin-bottom: 20px;
+    margin-bottom: 12px;
   }
 
+  .brand h1 { font-size: 32px; }
+  .brand-subtitle { font-size: 13px; }
 
   .theme-button {
-    padding:
-      7px 11px;
-
+    min-height: 44px;
+    padding: 7px 11px;
     font-size: 13px;
   }
 
-
-  .book-section,
-  .search-section,
-  .number-section {
-    border-radius: 20px;
-
-    padding: 16px;
-  }
-
-
-  /* 手機歌本左右滑 */
+  /* 歌本手機改成橫滑：每個選項夠大，但不佔兩三行高度 */
+  .book-section { padding: 9px 8px; }
 
   .book-list {
     display: flex;
-
     overflow-x: auto;
-
-    gap: 10px;
-
-    padding-bottom: 8px;
-
-    scroll-snap-type:
-      x proximity;
-
-    scrollbar-width:
-      none;
+    gap: 6px;
+    padding: 1px 0 3px;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
   }
 
-
-  .book-list::-webkit-scrollbar {
-    display: none;
-  }
-
+  .book-list::-webkit-scrollbar { display: none; }
 
   .book-button {
-    flex:
-      0 0 96px;
-
-    scroll-snap-align:
-      start;
+    flex: 0 0 82px;
+    min-height: 82px;
+    scroll-snap-align: start;
   }
-
 
   .book-cover {
-    width: 68px;
-
-    height: 90px;
+    width: 38px;
+    height: 49px;
   }
 
+  .book-name { font-size: 11.5px; }
 
-  .book-name {
-    font-size: 12px;
-  }
-
-
-  /* 歌號 */
-
-  .number-display {
-    letter-spacing: 2px;
-  }
-
-
-  /* 詩歌 */
-
-  .hymn-card {
-    border-radius: 20px;
-
-    padding:
-      22px 18px 30px;
-  }
-
-
-  .hymn-top {
-    flex-direction:
-      column-reverse;
-
-    gap: 12px;
-  }
-
-
-  .hymn-number {
-    align-self:
-      flex-start;
-
+  .search-section { padding: 9px; }
+  .search-input {
+    min-height: 54px;
     font-size: 17px;
   }
 
-
-  .hymn-title {
-    font-size:
-      clamp(26px, 7vw, 34px);
+  .number-section {
+    padding: 14px 13px 10px;
   }
-
-
-  .hymn-lyrics {
-    font-size:
-      clamp(22px, 6vw, 28px);
-
-    line-height: 1.9;
-  }
-
-}
-
-
-/* =========================
-   很小的手機
-========================= */
-
-@media (max-width: 390px) {
-
-  .app {
-    padding-left: 9px;
-
-    padding-right: 9px;
-  }
-
-
-  .header h1 {
-    font-size: 32px;
-  }
-
-
-  .theme-button span {
-    display: none;
-  }
-
-
-  .theme-button {
-    width: 44px;
-
-    padding: 0;
-  }
-
-
-  .number-header {
-    gap: 8px;
-  }
-
 
   .number-display {
-    font-size: 30px;
+    font-size: 34px;
+    letter-spacing: 3px;
   }
-
 
   .wheel-panel {
     gap: 2px;
+    padding: 6px 2px;
   }
-
 
   .wheel-option {
-    font-size: 34px;
+    font-size: clamp(30px, 9vw, 41px);
   }
 
-
   .selection-window {
+    left: 2px;
+    right: 2px;
     border-radius: 14px;
   }
 
+  .hymn-card {
+    border-radius: 20px;
+    padding: 20px 17px 28px;
+  }
+
+  .hymn-top { display: none; }
+
+  .hymn-carousel {
+    display: block;
+    width: calc(100% + 34px);
+    margin: -2px -17px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: pan-x pan-y;
+    scroll-padding-inline: 11%;
+  }
+
+  .hymn-carousel::-webkit-scrollbar { display: none; }
+
+  .hymn-carousel-track {
+    display: flex;
+    align-items: stretch;
+    gap: 9px;
+    width: max-content;
+    padding: 4px 11% 7px;
+  }
+
+  .hymn-carousel-item {
+    appearance: none;
+    flex: 0 0 min(77vw, 330px);
+    min-height: 104px;
+    scroll-snap-align: center;
+    border: 1px solid var(--border-color);
+    border-radius: 17px;
+    background: var(--button-bg);
+    color: var(--text-main);
+    padding: 11px 13px 12px;
+    text-align: left;
+    cursor: pointer;
+    opacity: .55;
+    transform: scale(.95);
+    transition: opacity .15s ease, transform .15s ease;
+  }
+
+  .hymn-carousel-item.active {
+    opacity: 1;
+    transform: scale(1);
+    background: var(--card-bg);
+    border-color: var(--text-soft);
+  }
+
+  .hymn-carousel-number {
+    display: inline-block;
+    margin-bottom: 7px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--strong-bg);
+    color: var(--strong-text);
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .hymn-carousel-book {
+    display: inline-block;
+    vertical-align: middle;
+    width: auto;
+    margin: 0 8px 0 0;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: var(--soft-bg);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .hymn-carousel-title {
+    display: inline;
+    vertical-align: middle;
+    color: var(--text-main);
+    font-size: clamp(20px, 5.7vw, 26px);
+    font-weight: 900;
+    line-height: 1.28;
+  }
+
+  .hymn-carousel + .divider {
+    margin-top: 14px;
+  }
+
+  .hymn-lyrics {
+    font-size: clamp(22px, 6vw, 28px);
+    line-height: 1.9;
+  }
 }
 
-
-/* =========================
-   減少動畫
-========================= */
-
-@media (
-  prefers-reduced-motion:
-  reduce
-) {
-
-  html {
-    scroll-behavior: auto;
+@media (max-width: 390px) {
+  .theme-button span:last-child { display: none; }
+  .theme-button {
+    width: 44px;
+    padding: 0;
   }
+
+  .brand-subtitle { display: none; }
+
+  .number-header { gap: 8px; }
+  .current-book-name { font-size: 18px; }
+  .number-display { font-size: 31px; }
+
+  .wheel-option { font-size: 34px; }
+  .book-button { flex-basis: 78px; }
+}
+
+/* 有滑鼠裝置才加 hover，避免手機黏住 */
+@media (hover: hover) {
+  .book-button:hover {
+    background: var(--button-active-bg);
+  }
+
+  .search-result:hover {
+    border-color: var(--text-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 
   *,
   *::before,
   *::after {
-    animation-duration:
-      0.01ms !important;
-
-    animation-iteration-count:
-      1 !important;
-
-    transition-duration:
-      0.01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
   }
-
 }
-
-/* =========================
-   手機詩歌橫向轉盤
-========================= */
-
-/*
-  桌面維持原本標題。
-  轉盤主要提供手機觸控操作。
-*/
-
-.hymn-carousel {
-  display: none;
-}
-
-
-@media (max-width: 700px) {
-
-  /*
-    手機隱藏原本靜態標題，
-    改由下面的橫向轉盤顯示。
-  */
-
-  .hymn-top {
-    display: none;
-  }
-
-
-  .hymn-carousel {
-    display: block;
-
-    width:
-      calc(
-        100% + 36px
-      );
-
-    margin:
-      -4px -18px 0;
-
-    overflow-x:
-      auto;
-
-    overflow-y:
-      hidden;
-
-    scroll-snap-type:
-      x mandatory;
-
-    scroll-behavior:
-      smooth;
-
-    overscroll-behavior-x:
-      contain;
-
-    -webkit-overflow-scrolling:
-      touch;
-
-    scrollbar-width:
-      none;
-
-    touch-action:
-      pan-x pan-y;
-
-    /*
-      左右留空間，
-      讓第一張 / 最後一張也能停在中央。
-    */
-
-    scroll-padding-inline:
-      11%;
-  }
-
-
-  .hymn-carousel::-webkit-scrollbar {
-    display: none;
-  }
-
-
-  .hymn-carousel-track {
-    display: flex;
-
-    align-items:
-      stretch;
-
-    gap: 10px;
-
-    width:
-      max-content;
-
-    padding:
-      4px 11% 8px;
-  }
-
-
-  .hymn-carousel-item {
-    appearance: none;
-
-    flex:
-      0 0
-      min(
-        76vw,
-        330px
-      );
-
-    scroll-snap-align:
-      center;
-
-    scroll-snap-stop:
-      normal;
-
-    border:
-      1px solid
-      var(--border-color);
-
-    border-radius:
-      18px;
-
-    background:
-      var(--button-bg);
-
-    color:
-      var(--text-main);
-
-    padding:
-      15px 16px 17px;
-
-    min-height:
-      132px;
-
-    text-align:
-      left;
-
-    font-family:
-      inherit;
-
-    box-shadow:
-      0 5px 18px
-      rgba(15, 23, 42, 0.05);
-
-    opacity:
-      0.56;
-
-    transform:
-      scale(0.94);
-
-    transition:
-      opacity 0.18s ease,
-      transform 0.18s ease,
-      border-color 0.18s ease,
-      background 0.18s ease;
-
-    cursor:
-      pointer;
-  }
-
-
-  .hym-carousel-item:active {
-    transform:
-      scale(0.92);
-  }
-
-
-  /*
-    目前選中的詩歌較大、較清楚。
-  */
-
-  .hymn-carousel-item.active {
-    opacity:
-      1;
-
-    transform:
-      scale(1);
-
-    border-color:
-      var(--text-soft);
-
-    background:
-      var(--card-bg);
-
-    box-shadow:
-      0 8px 24px
-      rgba(15, 23, 42, 0.09);
-  }
-
-
-  .hymn-carousel-number {
-    display:
-      inline-block;
-
-    padding:
-      7px 11px;
-
-    border-radius:
-      11px;
-
-    background:
-      var(--strong-bg);
-
-    color:
-      var(--strong-text);
-
-    font-size:
-      16px;
-
-    font-weight:
-      900;
-
-    font-variant-numeric:
-      tabular-nums;
-
-    line-height:
-      1.1;
-
-    margin-bottom:
-      9px;
-  }
-
-
-  .hymn-carousel-book {
-    width:
-      fit-content;
-
-    padding:
-      4px 8px;
-
-    border-radius:
-      999px;
-
-    background:
-      var(--soft-bg);
-
-    color:
-      var(--text-muted);
-
-    font-size:
-      12px;
-
-    font-weight:
-      800;
-
-    margin-bottom:
-      8px;
-  }
-
-
-  .hymn-carousel-title {
-    color:
-      var(--text-main);
-
-    font-size:
-      clamp(
-        22px,
-        6.2vw,
-        29px
-      );
-
-    line-height:
-      1.3;
-
-    font-weight:
-      900;
-
-    letter-spacing:
-      0.01em;
-
-    display:
-      -webkit-box;
-
-    -webkit-line-clamp:
-      2;
-
-    -webkit-box-orient:
-      vertical;
-
-    overflow:
-      hidden;
-  }
-
-
-  /*
-    轉盤後面的分隔線稍微靠近。
-  */
-
-  .hymn-carousel + .divider {
-    margin-top:
-      20px;
-  }
-
-}
-
-
-@media (max-width: 390px) {
-
-  .hymn-carousel {
-    width:
-      calc(
-        100% + 36px
-      );
-  }
-
-
-  .hymn-carousel-item {
-    flex-basis:
-      78vw;
-
-    min-height:
-      126px;
-
-    padding:
-      14px 15px 16px;
-  }
-
-
-  .hymn-carousel-title {
-    font-size:
-      clamp(
-        21px,
-        6.4vw,
-        27px
-      );
-  }
-
-}
-
-/* =========================
-   手機版面精簡
-   1. 保留精簡版面
-   2. 滾輪恢復原始 210px 高度
-   3. 詩歌本 + 歌名同一行
-   4. 橫向轉盤放手後不再做多餘滑動動畫
-========================= */
-
-@media (max-width: 700px) {
-
-  /* 選擇歌號卡片本身維持精簡 */
-  .number-section {
-    padding:
-      14px 16px 12px;
-
-    margin-bottom:
-      12px;
-
-    border-radius:
-      20px;
-  }
-
-
-  .number-header {
-    margin-bottom:
-      4px;
-
-    align-items:
-      flex-start;
-  }
-
-
-  .number-header .section-title {
-    font-size:
-      12px;
-
-    line-height:
-      1.2;
-  }
-
-
-  .current-book-name {
-    margin-top:
-      2px;
-
-    font-size:
-      20px;
-
-    line-height:
-      1.15;
-  }
-
-
-  .number-display {
-    font-size:
-      34px;
-
-    line-height:
-      1;
-
-    letter-spacing:
-      3px;
-  }
-
-
-  /*
-    數字滾輪恢復原始尺寸。
-
-    app.js：
-    ITEM_HEIGHT = 70
-
-    所以：
-    70 × 3 = 210px
-
-    這是原本最穩定的配置。
-  */
-
-  .wheel {
-    height:
-      210px;
-  }
-
-
-  .wheel-option,
-  .wheel-padding {
-    height:
-      70px;
-  }
-
-
-  .wheel-option {
-    font-size:
-      clamp(
-        28px,
-        7vw,
-        40px
-      );
-  }
-
-
-  .wheel-panel {
-    padding:
-      6px 4px;
-
-    gap:
-      3px;
-  }
-
-
-  /*
-    210px 高度下，
-    中央選取框恢復原始位置。
-  */
-
-  .selection-window {
-    top:
-      76px;
-
-    height:
-      70px;
-
-    border-radius:
-      14px;
-  }
-
-
-  /*
-    轉盤取消 CSS smooth，
-    放手後直接停在選中的卡片。
-  */
-
-  .hymn-carousel {
-    scroll-behavior:
-      auto;
-  }
-
-
-  /*
-    詩歌轉盤卡片維持精簡。
-  */
-
-  .hymn-carousel-item {
-    min-height:
-      108px;
-
-    padding:
-      12px 14px 13px;
-  }
-
-
-  .hymn-carousel-number {
-    margin-bottom:
-      7px;
-
-    padding:
-      6px 10px;
-
-    font-size:
-      15px;
-  }
-
-
-  /*
-    詩歌本與歌名排在同一行。
-  */
-
-  .hymn-carousel-book {
-    display:
-      inline-block;
-
-    vertical-align:
-      middle;
-
-    width:
-      auto;
-
-    margin:
-      0 8px 0 0;
-
-    padding:
-      3px 7px;
-
-    font-size:
-      11px;
-  }
-
-
-  .hymn-carousel-title {
-    display:
-      inline;
-
-    vertical-align:
-      middle;
-
-    font-size:
-      clamp(
-        20px,
-        5.6vw,
-        26px
-      );
-
-    line-height:
-      1.25;
-
-    -webkit-line-clamp:
-      unset;
-
-    -webkit-box-orient:
-      unset;
-
-    overflow:
-      visible;
-  }
-
-
-  .hymn-carousel + .divider {
-    margin-top:
-      14px;
-  }
-
-}
-
-
-@media (max-width: 390px) {
-
-  .number-section {
-    padding:
-      12px 13px 10px;
-  }
-
-
-  /*
-    小螢幕也不要再把滾輪縮成 146px。
-    一律維持 210px，
-    才與 app.js 的 70px 計算完全一致。
-  */
-
-  .wheel {
-    height:
-      210px;
-  }
-
-
-  .selection-window {
-    top:
-      76px;
-
-    height:
-      70px;
-  }
-
-
-  .hymn-carousel-item {
-    min-height:
-      102px;
-
-    padding:
-      11px 13px 12px;
-  }
-
-}
-
