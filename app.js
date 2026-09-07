@@ -2114,12 +2114,23 @@ function openSearchResult(hymn) {
   setSelectedNumber(hymn.code);
   showHymn(hymn);
 
-  if (hymnArea) {
-    hymnArea.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
+  /*
+    從搜尋結果開啟詩歌時，直接定位到「歌詞卡片」，
+    不再停在上方的詩歌本封面／數字轉盤區。
+
+    用兩層 requestAnimationFrame，確保 hymnCard 已解除 hidden、
+    瀏覽器完成版面更新後再定位，手機上會更穩定。
+  */
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (hymnCard) {
+        hymnCard.scrollIntoView({
+          behavior: "auto",
+          block: "start"
+        });
+      }
     });
-  }
+  });
 
 }
 
