@@ -100,6 +100,13 @@ const BOOKS = [
     name: "藍本新詩",
     image: null,
     textIcon: "藍本"
+  },
+
+  {
+    id: 7,
+    name: "新詩歌",
+    image: null,
+    textIcon: "新詩歌"
   }
 
 ];

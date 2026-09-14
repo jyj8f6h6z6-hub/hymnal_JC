@@ -1579,11 +1579,11 @@ button, input { font-family: inherit; }
 @media (min-width: 701px) {
 
   /*
-    桌面：六本直接排開，不再橫向捲動。
+    桌面：七本直接排開，不再橫向捲動。
   */
   .book-list {
     display: grid !important;
-    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
     gap: 10px !important;
 
     width: 100% !important;
