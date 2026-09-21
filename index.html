@@ -207,5 +207,16 @@
   <script src="./hymns.js"></script>
   <script src="./app.js"></script>
   <script src="./enhancements.js"></script>
+
+  <!-- 離線版：註冊 Service Worker。第一次連網載入完成後，可離線開啟。 -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js").catch((error) => {
+          console.warn("離線功能註冊失敗：", error);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
