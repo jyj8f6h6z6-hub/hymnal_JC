@@ -1959,8 +1959,45 @@ function runSearch(rawQuery) {
       也可以全部都在歌詞中。
     */
     const searchableText = `${title}${lyrics}`;
-    const allKeywordsMatch = keywords.every(
-      keyword => searchableText.includes(keyword)
+
+    /*
+      同一關鍵字重複輸入時，重複次數就是最低出現次數。
+
+      例如輸入：
+      喜樂 喜樂 喜樂 喜樂 喜樂
+
+      代表這首詩歌的可搜尋文字中，「喜樂」至少要出現 5 次。
+      因此只有 4 次的詩歌會被排除；有 5 次以上的仍會顯示。
+    */
+    const keywordCounts = new Map();
+
+    for (const keyword of keywords) {
+      keywordCounts.set(
+        keyword,
+        (keywordCounts.get(keyword) || 0) + 1
+      );
+    }
+
+    const countOccurrences = (text, keyword) => {
+      if (!keyword) return 0;
+
+      let count = 0;
+      let startIndex = 0;
+
+      while (true) {
+        const foundIndex = text.indexOf(keyword, startIndex);
+        if (foundIndex === -1) break;
+
+        count += 1;
+        startIndex = foundIndex + keyword.length;
+      }
+
+      return count;
+    };
+
+    const allKeywordsMatch = Array.from(keywordCounts.entries()).every(
+      ([keyword, requiredCount]) =>
+        countOccurrences(searchableText, keyword) >= requiredCount
     );
 
     let score = 99;
