@@ -1689,3 +1689,9 @@ button, input { font-family: inherit; }
   }
 
 }
+
+/* 英詩中譯：Burgundy 酒紅＋暖白 */
+.book-button[data-book="7"] .book-text-cover {
+  background: linear-gradient(145deg, #9B1B35, #741426);
+  color: #FFF4DF;
+}

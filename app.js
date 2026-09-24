@@ -104,9 +104,9 @@ const BOOKS = [
 
   {
     id: 7,
-    name: "新詩歌",
+    name: "英詩中譯",
     image: null,
-    textIcon: "新詩歌"
+    textIcon: "英詩\n中譯"
   }
 
 ];
