@@ -2159,6 +2159,87 @@ document.addEventListener(
    - 點標題回到本首第一節
 ========================================================= */
 
+
+let lyricsSongChangeAnimating = false;
+
+function animateLyricsSongChange(nextHymn, direction) {
+  if (
+    !nextHymn ||
+    !hymnLyrics ||
+    lyricsSongChangeAnimating
+  ) {
+    return;
+  }
+
+  const reduceMotion =
+    window.matchMedia &&
+    window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+  const outClass =
+    direction === "next"
+      ? "song-slide-out-left"
+      : "song-slide-out-right";
+
+  const inClass =
+    direction === "next"
+      ? "song-slide-in-right"
+      : "song-slide-in-left";
+
+  const switchSong = () => {
+    setSelectedNumber(nextHymn.code);
+    showHymn(nextHymn);
+
+    /*
+      換歌後回到歌詞開頭。
+      不用 smooth，避免與水平動畫互相干擾。
+    */
+    requestAnimationFrame(() => {
+      hymnLyrics.scrollIntoView({
+        behavior: "auto",
+        block: "start"
+      });
+    });
+  };
+
+  if (reduceMotion) {
+    switchSong();
+    return;
+  }
+
+  lyricsSongChangeAnimating = true;
+
+  hymnLyrics.classList.remove(
+    "song-slide-out-left",
+    "song-slide-out-right",
+    "song-slide-in-left",
+    "song-slide-in-right"
+  );
+
+  hymnLyrics.classList.add(outClass);
+
+  window.setTimeout(() => {
+    switchSong();
+
+    /*
+      showHymn 內部也是 requestAnimationFrame 更新歌詞，
+      因此多等一個畫面週期再做新歌進場。
+    */
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        hymnLyrics.classList.remove(outClass);
+        hymnLyrics.classList.add(inClass);
+
+        window.setTimeout(() => {
+          hymnLyrics.classList.remove(inClass);
+          lyricsSongChangeAnimating = false;
+        }, 210);
+      });
+    });
+  }, 150);
+}
+
 function setupLyricsSwipeV13() {
   if (!hymnLyrics || !hymnTitle) return;
 
@@ -2224,15 +2305,15 @@ function setupLyricsSwipeV13() {
     if (nextIndex < 0 || nextIndex >= bookHymns.length) return;
 
     const nextHymn = bookHymns[nextIndex];
-    setSelectedNumber(nextHymn.code);
-    showHymn(nextHymn);
 
-    requestAnimationFrame(() => {
-      hymnCard.scrollIntoView({
-        behavior: "auto",
-        block: "start"
-      });
-    });
+    /*
+      v17｜左右切歌過渡動畫
+      左滑：目前歌詞向左淡出，新歌詞由右淡入。
+      右滑：目前歌詞向右淡出，新歌詞由左淡入。
+      不建立額外歌詞 DOM，因此不會隨切歌次數累積記憶體。
+    */
+    const direction = dx < 0 ? "next" : "prev";
+    animateLyricsSongChange(nextHymn, direction);
   }, { passive: true });
 
   const hymnTop = document.querySelector(".hymn-top");

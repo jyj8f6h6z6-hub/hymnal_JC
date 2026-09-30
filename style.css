@@ -1795,3 +1795,66 @@ button, input { font-family: inherit; }
     max-width: 33.333% !important;
   }
 }
+
+
+/* =========================================================
+   v17｜左右切歌輕量過渡動畫
+   僅使用 transform + opacity，不建立額外歌詞頁面
+========================================================= */
+#hymnLyrics {
+  will-change: auto;
+}
+
+#hymnLyrics.song-slide-out-left,
+#hymnLyrics.song-slide-out-right,
+#hymnLyrics.song-slide-in-left,
+#hymnLyrics.song-slide-in-right {
+  will-change: transform, opacity;
+}
+
+#hymnLyrics.song-slide-out-left {
+  animation: hymnSongOutLeft 150ms ease-in forwards;
+}
+
+#hymnLyrics.song-slide-out-right {
+  animation: hymnSongOutRight 150ms ease-in forwards;
+}
+
+#hymnLyrics.song-slide-in-right {
+  animation: hymnSongInRight 200ms ease-out both;
+}
+
+#hymnLyrics.song-slide-in-left {
+  animation: hymnSongInLeft 200ms ease-out both;
+}
+
+@keyframes hymnSongOutLeft {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(-28px); opacity: 0; }
+}
+
+@keyframes hymnSongOutRight {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(28px); opacity: 0; }
+}
+
+@keyframes hymnSongInRight {
+  from { transform: translateX(28px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes hymnSongInLeft {
+  from { transform: translateX(-28px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #hymnLyrics.song-slide-out-left,
+  #hymnLyrics.song-slide-out-right,
+  #hymnLyrics.song-slide-in-left,
+  #hymnLyrics.song-slide-in-right {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
