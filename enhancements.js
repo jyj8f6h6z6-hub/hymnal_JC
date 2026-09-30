@@ -2235,24 +2235,32 @@ function setupLyricsSwipeV13() {
     });
   }, { passive: true });
 
-  hymnTitle.setAttribute("role", "button");
-  hymnTitle.setAttribute("tabindex", "0");
-  hymnTitle.setAttribute("aria-label", "回到本首第一節");
+  const hymnTop = document.querySelector(".hymn-top");
+
+  if (hymnTop) {
+    hymnTop.setAttribute("role", "button");
+    hymnTop.setAttribute("tabindex", "0");
+    hymnTop.setAttribute("aria-label", "回到本首第一節");
+  }
 
   const goToFirstVerse = () => {
-    hymnCard.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
+    if (hymnLyrics) {
+      hymnLyrics.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
   };
 
-  hymnTitle.addEventListener("click", goToFirstVerse);
-  hymnTitle.addEventListener("keydown", event => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      goToFirstVerse();
-    }
-  });
+  if (hymnTop) {
+    hymnTop.addEventListener("click", goToFirstVerse);
+    hymnTop.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        goToFirstVerse();
+      }
+    });
+  }
 }
 
 document.addEventListener(

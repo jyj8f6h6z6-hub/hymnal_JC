@@ -111,6 +111,23 @@ const BOOKS = [
 
 ];
 
+/* 歌詞標題列使用的歌本簡稱 */
+function getCompactBookName(bookId) {
+  const compactNames = {
+    1: "詩歌",
+    2: "補",
+    3: "頌",
+    4: "紅本",
+    5: "兒童",
+    6: "藍本",
+    7: "中譯"
+  };
+
+  return compactNames[Number(bookId)] || `歌本${bookId}`;
+}
+
+
+
 
 
 /* =========================================================
@@ -1663,21 +1680,18 @@ function showHymn(
 
 
   hymnBook.textContent =
-    book
-      ? book.name
-      : `歌本 ${hymn.book}`;
-
+    `${getCompactBookName(hymn.book)}．${hymn.code}`;
 
   hymnTitle.textContent =
     hymn.title
-      ? String(
-          hymn.title
-        ).trim()
+      ? String(hymn.title).trim()
       : "未命名詩歌";
 
-
-  hymnNumber.textContent =
-    `第 ${hymn.code} 首`;
+  /*
+    首數已併入左側簡寫，例如「補．2」，
+    不再另外顯示「第 2 首」。
+  */
+  hymnNumber.textContent = "";
 
 
   /*
