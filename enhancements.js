@@ -2164,10 +2164,12 @@ function setupLyricsSwipeV13() {
   let originalNext = hymnTop ? hymnTop.nextSibling : hymnLyrics.nextSibling;
 
   function compactName(id) {
-    return ({1:"詩歌",2:"補",3:"頌",4:"紅本",5:"兒童",6:"藍本",7:"中譯"})[Number(id)] || `歌本${id}`;
+    return ({1:"詩歌",2:"補",3:"頌",4:"紅本",5:"兒童",6:"藍本",7:"其他"})[Number(id)] || `歌本${id}`;
   }
 
   function targetFor(delta) {
+    // 「其他詩歌」沒有公開首數／固定順序，不使用左右翻頁切歌。
+    if (Number(selectedBook) === 7) return null;
     const list=getHymnsForCurrentBook();
     const i=list.findIndex(h=>Number(h.code)===Number(getSelectedNumber()));
     if(i<0) return null;
@@ -2313,13 +2315,13 @@ function setupLyricsSwipeV13() {
   }
 }
 
-function setupAppVersionV19(){
+function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v19";
+  el.textContent="Hymnal JC · v2.0";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
   setupLyricsSwipeV13();
-  setupAppVersionV19();
+  setupAppVersionV20();
 });

@@ -1690,7 +1690,7 @@ button, input { font-family: inherit; }
 
 }
 
-/* 英詩中譯：Burgundy 酒紅＋暖白 */
+/* 其他詩歌：Burgundy 酒紅＋暖白 */
 .book-button[data-book="7"] .book-text-cover {
   background: linear-gradient(145deg, #9B1B35, #741426);
   color: #FFF4DF;
@@ -1838,4 +1838,39 @@ button, input { font-family: inherit; }
 }
 @media(prefers-reduced-motion:reduce){
   .hymn-reading-page.is-settling{transition:none!important;}
+}
+
+
+/* =========================================================
+   v2.0｜其他詩歌模式
+   - 不顯示數字轉盤／首數
+   - 搜尋結果只顯示歌名
+   - 閱讀標題列只顯示歌名
+========================================================= */
+body.other-songs-mode .number-section {
+  display: none !important;
+}
+
+.search-result-other-song {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+}
+
+.search-result-other-song .search-result-title {
+  width: 100%;
+  font-size: 17px;
+}
+
+.hymn-card.other-song-reading .hymn-top {
+  gap: 0 !important;
+}
+
+.hymn-card.other-song-reading #hymnBook {
+  display: none !important;
+}
+
+.hymn-card.other-song-reading #hymnTitle {
+  flex: 1 1 100% !important;
+  max-width: none !important;
 }

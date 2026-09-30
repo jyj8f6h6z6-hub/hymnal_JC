@@ -104,9 +104,9 @@ const BOOKS = [
 
   {
     id: 7,
-    name: "英詩中譯",
+    name: "其他詩歌",
     image: null,
-    textIcon: "英詩\n中譯"
+    textIcon: "其他\n詩歌"
   }
 
 ];
@@ -120,7 +120,7 @@ function getCompactBookName(bookId) {
     4: "紅本",
     5: "兒童",
     6: "藍本",
-    7: "中譯"
+    7: "其他"
   };
 
   return compactNames[Number(bookId)] || `歌本${bookId}`;
@@ -230,6 +230,10 @@ const wheels = [
   wheelOnes
 
 ];
+
+const numberSection = document.querySelector(".number-section");
+const emptyTitle = document.querySelector(".empty-title");
+const emptyText = document.querySelector(".empty-text");
 
 
 
@@ -763,6 +767,58 @@ function createBookButtons() {
 
 
 /* =========================================================
+   v2.0｜歌本操作模式
+   - 1～6：正式首數，使用數字轉盤
+   - 7：其他詩歌，只使用歌名／歌詞搜尋
+========================================================= */
+
+function isOtherSongsBook(bookId = selectedBook) {
+  return Number(bookId) === 7;
+}
+
+function applyBookMode() {
+  const otherMode = isOtherSongsBook();
+
+  document.body.classList.toggle("other-songs-mode", otherMode);
+
+  if (numberSection) {
+    numberSection.classList.toggle("hidden", otherMode);
+    numberSection.setAttribute("aria-hidden", otherMode ? "true" : "false");
+  }
+
+  if (searchInput) {
+    searchInput.placeholder = otherMode
+      ? "搜尋其他詩歌的歌名或歌詞"
+      : "不知道歌號？搜尋歌名或歌詞";
+    searchInput.setAttribute(
+      "aria-label",
+      otherMode ? "搜尋其他詩歌的歌名或歌詞" : "不知道歌號時，搜尋歌名或歌詞"
+    );
+  }
+
+  if (otherMode) {
+    if (hymnLoadTimer) {
+      clearTimeout(hymnLoadTimer);
+      hymnLoadTimer = null;
+    }
+    hymnCard.classList.add("hidden");
+    notFound.classList.add("hidden");
+    emptyState.classList.remove("hidden");
+    if (emptyTitle) emptyTitle.textContent = "搜尋其他詩歌";
+    if (emptyText) emptyText.textContent = "輸入歌名或歌詞即可尋找";
+  } else {
+    if (emptyTitle) emptyTitle.textContent = "選一首詩歌";
+    if (emptyText) emptyText.textContent = "滑動歌號，或從上方搜尋";
+  }
+
+  if (searchInput && searchInput.value.trim()) {
+    runSearch(searchInput.value);
+  } else {
+    clearSearchResults();
+  }
+}
+
+/* =========================================================
    選擇歌本
 ========================================================= */
 
@@ -825,14 +881,12 @@ function selectBook(bookId) {
       : `歌本 ${selectedBook}`;
 
 
-  /*
-    換歌本後，
-    不影響滾輪。
+  /* v2.0：其他詩歌沒有對外顯示的固定首數，不使用數字轉盤。 */
+  applyBookMode();
 
-    直接用目前歌號重新查歌。
-  */
-
-  scheduleHymnUpdate();
+  if (!isOtherSongsBook()) {
+    scheduleHymnUpdate();
+  }
 
 }
 
@@ -1587,6 +1641,9 @@ function findHymn(
 
 function updateHymn() {
 
+  if (isOtherSongsBook()) {
+    return;
+  }
 
   const code =
     getSelectedNumber();
@@ -1679,8 +1736,14 @@ function showHymn(
     );
 
 
-  hymnBook.textContent =
-    `${getCompactBookName(hymn.book)}．${hymn.code}`;
+  const otherSong = isOtherSongsBook(hymn.book);
+
+  hymnBook.textContent = otherSong
+    ? ""
+    : `${getCompactBookName(hymn.book)}．${hymn.code}`;
+
+  hymnBook.classList.toggle("hidden", otherSong);
+  hymnCard.classList.toggle("other-song-reading", otherSong);
 
   hymnTitle.textContent =
     hymn.title
@@ -1954,6 +2017,11 @@ function runSearch(rawQuery) {
 
   for (const hymn of hymns) {
 
+    /* 在「其他詩歌」頁面搜尋時，只搜尋其他詩歌；其餘頁面維持全站搜尋。 */
+    if (isOtherSongsBook() && Number(hymn.book) !== 7) {
+      continue;
+    }
+
     const title = normalizeSearchText(hymn.title);
     const lyrics = normalizeSearchText(hymn.lyrics);
     const code = Number(hymn.code);
@@ -2007,7 +2075,7 @@ function runSearch(rawQuery) {
 
     let score = 99;
 
-    if (numericQuery !== null && code === numericQuery) {
+    if (Number(hymn.book) !== 7 && numericQuery !== null && code === numericQuery) {
       score = 0;
     }
     else if (keywords.length === 1 && title === normalizedQuery) {
@@ -2089,24 +2157,31 @@ function renderSearchResults(matches) {
     button.type = "button";
     button.className = "search-result";
 
-    const top = document.createElement("div");
-    top.className = "search-result-top";
-
-    const bookName = document.createElement("span");
-    bookName.className = "search-result-book";
-    bookName.textContent = book ? book.name : `歌本 ${hymn.book}`;
-
-    const number = document.createElement("span");
-    number.className = "search-result-number";
-    number.textContent = `第 ${hymn.code} 首`;
+    const otherSong = Number(hymn.book) === 7;
 
     const title = document.createElement("div");
     title.className = "search-result-title";
     title.textContent = hymn.title || "未命名詩歌";
 
-    top.appendChild(bookName);
-    top.appendChild(number);
-    button.appendChild(top);
+    if (!otherSong) {
+      const top = document.createElement("div");
+      top.className = "search-result-top";
+
+      const bookName = document.createElement("span");
+      bookName.className = "search-result-book";
+      bookName.textContent = book ? book.name : `歌本 ${hymn.book}`;
+
+      const number = document.createElement("span");
+      number.className = "search-result-number";
+      number.textContent = `第 ${hymn.code} 首`;
+
+      top.appendChild(bookName);
+      top.appendChild(number);
+      button.appendChild(top);
+    } else {
+      button.classList.add("search-result-other-song");
+    }
+
     button.appendChild(title);
 
     button.addEventListener(
@@ -2160,7 +2235,11 @@ function openSearchResult(hymn) {
   }
 
   selectBook(hymn.book);
-  setSelectedNumber(hymn.code);
+
+  if (Number(hymn.book) !== 7) {
+    setSelectedNumber(hymn.code);
+  }
+
   showHymn(hymn);
 
   /*
@@ -2914,6 +2993,8 @@ function init() {
     book
       ? book.name
       : `歌本 ${selectedBook}`;
+
+  applyBookMode();
 
 
   /*
