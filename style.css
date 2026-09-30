@@ -1797,86 +1797,45 @@ button, input { font-family: inherit; }
 }
 
 /* =========================================================
-   v18｜跟手翻頁
-   目前頁在上層，拖開時露出底下相鄰詩歌
+   v19｜整張閱讀頁翻頁
 ========================================================= */
-
-.hymn-card {
-  overflow-x: clip;
+.hymn-card{position:relative;overflow-x:clip;}
+.hymn-card.is-page-turning{overflow:hidden!important;}
+.hymn-page-turn-stage{
+  position:relative;width:100%;min-height:100vh;overflow:hidden;
+  background:var(--card-bg,#fff);touch-action:none;
 }
-
-#hymnLyrics.page-turn-current {
-  position: relative !important;
-  z-index: 3 !important;
-  background: var(--card-bg, #ffffff);
-  transform:
-    translate3d(var(--page-dx, 0px), 0, 0)
-    perspective(900px)
-    rotateY(calc(var(--page-progress, 0) * -3deg));
-  transform-origin: center left;
-  will-change: transform;
-  backface-visibility: hidden;
+.hymn-reading-page{
+  position:absolute;inset:0;width:100%;min-height:100%;
+  background:var(--card-bg,#fff);backface-visibility:hidden;
+  will-change:transform;
 }
-
-.page-turn-preview {
-  position: absolute !important;
-  left: 0;
-  right: 0;
-  z-index: 2 !important;
-  margin: 0 !important;
-  padding-top: 1rem;
-  background: var(--card-bg, #ffffff);
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-select: none;
-  will-change: transform, opacity;
-  backface-visibility: hidden;
+.hymn-reading-page-current{z-index:2;}
+.hymn-reading-page-preview{z-index:1;}
+.hymn-reading-page .hymn-top{
+  position:relative!important;top:auto!important;z-index:5!important;
+  background:var(--card-bg,#fff)!important;
 }
-
-/* 下一首藏在右邊；目前頁往左拖時逐步露出 */
-.page-turn-preview[data-direction="next"] {
-  transform: translate3d(
-    calc(100% + var(--page-dx, 0px)),
-    0,
-    0
-  );
+.hymn-reading-page .hymn-lyrics{
+  position:relative!important;z-index:1!important;
+  background:var(--card-bg,#fff);
 }
-
-/* 上一首藏在左邊；目前頁往右拖時逐步露出 */
-.page-turn-preview[data-direction="prev"] {
-  transform: translate3d(
-    calc(-100% + var(--page-dx, 0px)),
-    0,
-    0
-  );
+.hymn-reading-page-current::after{
+  content:"";position:absolute;top:0;right:-1px;bottom:0;width:22px;
+  pointer-events:none;opacity:calc(var(--turn-progress,0)*.32);
+  box-shadow:12px 0 22px rgba(0,0,0,.22);
 }
-
-#hymnLyrics.page-turn-current::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 18px;
-  right: 0;
-  pointer-events: none;
-  opacity: calc(var(--page-progress, 0) * .28);
-  box-shadow: 10px 0 18px rgba(0, 0, 0, .22);
+.hymn-reading-page.is-settling{
+  transition:transform 220ms cubic-bezier(.22,.72,.24,1)!important;
 }
-
-#hymnLyrics.page-turn-settling,
-.page-turn-preview.page-turn-settling {
-  transition:
-    transform 220ms cubic-bezier(.22,.75,.25,1),
-    opacity 220ms ease !important;
+.app-version-badge{
+  position:fixed;right:max(8px,env(safe-area-inset-right));
+  bottom:max(8px,env(safe-area-inset-bottom));z-index:9999;
+  padding:4px 8px;border:1px solid var(--border-color);border-radius:999px;
+  background:var(--card-bg,#fff);color:var(--text-muted,currentColor);
+  font-size:11px;font-weight:700;line-height:1.2;opacity:.72;
+  pointer-events:none;user-select:none;-webkit-user-select:none;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  #hymnLyrics.page-turn-current,
-  .page-turn-preview,
-  #hymnLyrics.page-turn-settling,
-  .page-turn-preview.page-turn-settling {
-    transition: none !important;
-    animation: none !important;
-    rotate: none !important;
-  }
+@media(prefers-reduced-motion:reduce){
+  .hymn-reading-page.is-settling{transition:none!important;}
 }
