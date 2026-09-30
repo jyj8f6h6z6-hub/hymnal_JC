@@ -1695,3 +1695,34 @@ button, input { font-family: inherit; }
   background: linear-gradient(145deg, #9B1B35, #741426);
   color: #FFF4DF;
 }
+
+
+/* =========================================================
+   v13｜歌詞閱讀／切歌介面
+   - 不顯示上方詩歌橫向轉盤
+   - 標題取消浮動框感，與歌詞同層
+   - 標題下方加底線
+========================================================= */
+
+.hymn-carousel {
+  display: none !important;
+}
+
+.hymn-top {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+#hymnTitle {
+  cursor: pointer;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 0.35em;
+}
+
+#hymnLyrics {
+  touch-action: pan-y;
+}

@@ -1681,15 +1681,6 @@ function showHymn(
 
 
   /*
-    同步手機橫向詩歌轉盤。
-  */
-
-  renderHymnCarousel(
-    hymn
-  );
-
-
-  /*
     先整理歌詞，
     再於下一個畫面更新週期放進 DOM。
   */
@@ -2853,13 +2844,6 @@ function init() {
   */
 
   setupSearch();
-
-
-  /*
-    手機詩歌標題區啟用橫向轉盤，可一次滑動鄰近多首。
-  */
-
-  setupHymnCarousel();
 
 
   /*

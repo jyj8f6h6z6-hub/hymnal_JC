@@ -2149,3 +2149,113 @@ document.addEventListener(
     disableOldDesktopBookDragV12();
   }
 );
+
+
+/* =========================================================
+   v13｜歌詞區左右滑切歌
+   - 取消上方詩歌橫向轉盤
+   - 單指水平滑動歌詞：上一首／下一首
+   - 保留單指上下閱讀與雙指縮放
+   - 點標題回到本首第一節
+========================================================= */
+
+function setupLyricsSwipeV13() {
+  if (!hymnLyrics || !hymnTitle) return;
+
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+  let horizontal = false;
+
+  hymnLyrics.addEventListener("touchstart", event => {
+    if (event.touches.length !== 1) {
+      tracking = false;
+      horizontal = false;
+      return;
+    }
+
+    startX = event.touches[0].clientX;
+    startY = event.touches[0].clientY;
+    tracking = true;
+    horizontal = false;
+  }, { passive: true });
+
+  hymnLyrics.addEventListener("touchmove", event => {
+    if (!tracking || event.touches.length !== 1) return;
+
+    const dx = event.touches[0].clientX - startX;
+    const dy = event.touches[0].clientY - startY;
+
+    if (!horizontal && Math.abs(dx) > 12) {
+      horizontal = Math.abs(dx) > Math.abs(dy) * 1.25;
+    }
+
+    if (horizontal) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+
+  hymnLyrics.addEventListener("touchend", event => {
+    if (!tracking || !event.changedTouches.length) return;
+
+    const dx = event.changedTouches[0].clientX - startX;
+    const dy = event.changedTouches[0].clientY - startY;
+    tracking = false;
+
+    if (
+      Math.abs(dx) < 55 ||
+      Math.abs(dx) <= Math.abs(dy) * 1.25
+    ) {
+      return;
+    }
+
+    const bookHymns = getHymnsForCurrentBook();
+    const currentCode = getSelectedNumber();
+    const currentIndex = bookHymns.findIndex(
+      hymn => Number(hymn.code) === Number(currentCode)
+    );
+
+    if (currentIndex === -1) return;
+
+    const nextIndex = dx < 0
+      ? currentIndex + 1
+      : currentIndex - 1;
+
+    if (nextIndex < 0 || nextIndex >= bookHymns.length) return;
+
+    const nextHymn = bookHymns[nextIndex];
+    setSelectedNumber(nextHymn.code);
+    showHymn(nextHymn);
+
+    requestAnimationFrame(() => {
+      hymnCard.scrollIntoView({
+        behavior: "auto",
+        block: "start"
+      });
+    });
+  }, { passive: true });
+
+  hymnTitle.setAttribute("role", "button");
+  hymnTitle.setAttribute("tabindex", "0");
+  hymnTitle.setAttribute("aria-label", "回到本首第一節");
+
+  const goToFirstVerse = () => {
+    hymnCard.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  };
+
+  hymnTitle.addEventListener("click", goToFirstVerse);
+  hymnTitle.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      goToFirstVerse();
+    }
+  });
+}
+
+document.addEventListener(
+  "DOMContentLoaded",
+  setupLyricsSwipeV13
+);
