@@ -1796,65 +1796,87 @@ button, input { font-family: inherit; }
   }
 }
 
-
 /* =========================================================
-   v17｜左右切歌輕量過渡動畫
-   僅使用 transform + opacity，不建立額外歌詞頁面
+   v18｜跟手翻頁
+   目前頁在上層，拖開時露出底下相鄰詩歌
 ========================================================= */
-#hymnLyrics {
-  will-change: auto;
+
+.hymn-card {
+  overflow-x: clip;
 }
 
-#hymnLyrics.song-slide-out-left,
-#hymnLyrics.song-slide-out-right,
-#hymnLyrics.song-slide-in-left,
-#hymnLyrics.song-slide-in-right {
+#hymnLyrics.page-turn-current {
+  position: relative !important;
+  z-index: 3 !important;
+  background: var(--card-bg, #ffffff);
+  transform:
+    translate3d(var(--page-dx, 0px), 0, 0)
+    perspective(900px)
+    rotateY(calc(var(--page-progress, 0) * -3deg));
+  transform-origin: center left;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.page-turn-preview {
+  position: absolute !important;
+  left: 0;
+  right: 0;
+  z-index: 2 !important;
+  margin: 0 !important;
+  padding-top: 1rem;
+  background: var(--card-bg, #ffffff);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
   will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
-#hymnLyrics.song-slide-out-left {
-  animation: hymnSongOutLeft 150ms ease-in forwards;
+/* 下一首藏在右邊；目前頁往左拖時逐步露出 */
+.page-turn-preview[data-direction="next"] {
+  transform: translate3d(
+    calc(100% + var(--page-dx, 0px)),
+    0,
+    0
+  );
 }
 
-#hymnLyrics.song-slide-out-right {
-  animation: hymnSongOutRight 150ms ease-in forwards;
+/* 上一首藏在左邊；目前頁往右拖時逐步露出 */
+.page-turn-preview[data-direction="prev"] {
+  transform: translate3d(
+    calc(-100% + var(--page-dx, 0px)),
+    0,
+    0
+  );
 }
 
-#hymnLyrics.song-slide-in-right {
-  animation: hymnSongInRight 200ms ease-out both;
+#hymnLyrics.page-turn-current::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 18px;
+  right: 0;
+  pointer-events: none;
+  opacity: calc(var(--page-progress, 0) * .28);
+  box-shadow: 10px 0 18px rgba(0, 0, 0, .22);
 }
 
-#hymnLyrics.song-slide-in-left {
-  animation: hymnSongInLeft 200ms ease-out both;
-}
-
-@keyframes hymnSongOutLeft {
-  from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(-28px); opacity: 0; }
-}
-
-@keyframes hymnSongOutRight {
-  from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(28px); opacity: 0; }
-}
-
-@keyframes hymnSongInRight {
-  from { transform: translateX(28px); opacity: 0; }
-  to   { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes hymnSongInLeft {
-  from { transform: translateX(-28px); opacity: 0; }
-  to   { transform: translateX(0); opacity: 1; }
+#hymnLyrics.page-turn-settling,
+.page-turn-preview.page-turn-settling {
+  transition:
+    transform 220ms cubic-bezier(.22,.75,.25,1),
+    opacity 220ms ease !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #hymnLyrics.song-slide-out-left,
-  #hymnLyrics.song-slide-out-right,
-  #hymnLyrics.song-slide-in-left,
-  #hymnLyrics.song-slide-in-right {
+  #hymnLyrics.page-turn-current,
+  .page-turn-preview,
+  #hymnLyrics.page-turn-settling,
+  .page-turn-preview.page-turn-settling {
+    transition: none !important;
     animation: none !important;
-    transform: none !important;
-    opacity: 1 !important;
+    rotate: none !important;
   }
 }

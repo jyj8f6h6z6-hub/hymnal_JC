@@ -2152,93 +2152,13 @@ document.addEventListener(
 
 
 /* =========================================================
-   v13｜歌詞區左右滑切歌
-   - 取消上方詩歌橫向轉盤
-   - 單指水平滑動歌詞：上一首／下一首
-   - 保留單指上下閱讀與雙指縮放
-   - 點標題回到本首第一節
+   v18｜歌詞跟手翻頁
+   - 單指水平拖曳時，目前頁跟著手指移動
+   - 底下同步露出上一首／下一首
+   - 放手超過門檻完成翻頁；不足則彈回
+   - 僅建立一個暫時預覽頁，結束立即移除
+   - 保留上下捲動、雙指縮放、點標題回第一節
 ========================================================= */
-
-
-let lyricsSongChangeAnimating = false;
-
-function animateLyricsSongChange(nextHymn, direction) {
-  if (
-    !nextHymn ||
-    !hymnLyrics ||
-    lyricsSongChangeAnimating
-  ) {
-    return;
-  }
-
-  const reduceMotion =
-    window.matchMedia &&
-    window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-  const outClass =
-    direction === "next"
-      ? "song-slide-out-left"
-      : "song-slide-out-right";
-
-  const inClass =
-    direction === "next"
-      ? "song-slide-in-right"
-      : "song-slide-in-left";
-
-  const switchSong = () => {
-    setSelectedNumber(nextHymn.code);
-    showHymn(nextHymn);
-
-    /*
-      換歌後回到歌詞開頭。
-      不用 smooth，避免與水平動畫互相干擾。
-    */
-    requestAnimationFrame(() => {
-      hymnLyrics.scrollIntoView({
-        behavior: "auto",
-        block: "start"
-      });
-    });
-  };
-
-  if (reduceMotion) {
-    switchSong();
-    return;
-  }
-
-  lyricsSongChangeAnimating = true;
-
-  hymnLyrics.classList.remove(
-    "song-slide-out-left",
-    "song-slide-out-right",
-    "song-slide-in-left",
-    "song-slide-in-right"
-  );
-
-  hymnLyrics.classList.add(outClass);
-
-  window.setTimeout(() => {
-    switchSong();
-
-    /*
-      showHymn 內部也是 requestAnimationFrame 更新歌詞，
-      因此多等一個畫面週期再做新歌進場。
-    */
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        hymnLyrics.classList.remove(outClass);
-        hymnLyrics.classList.add(inClass);
-
-        window.setTimeout(() => {
-          hymnLyrics.classList.remove(inClass);
-          lyricsSongChangeAnimating = false;
-        }, 210);
-      });
-    });
-  }, 150);
-}
 
 function setupLyricsSwipeV13() {
   if (!hymnLyrics || !hymnTitle) return;
@@ -2247,14 +2167,179 @@ function setupLyricsSwipeV13() {
   let startY = 0;
   let tracking = false;
   let horizontal = false;
+  let preview = null;
+  let targetHymn = null;
+  let direction = null;
+  let lastDx = 0;
+
+  const reduceMotion = () =>
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const clearPageTurn = () => {
+    hymnLyrics.classList.remove("page-turn-current");
+    hymnLyrics.style.removeProperty("--page-dx");
+    hymnLyrics.style.removeProperty("--page-progress");
+    hymnLyrics.style.removeProperty("transition");
+
+    if (preview) {
+      preview.remove();
+      preview = null;
+    }
+
+    targetHymn = null;
+    direction = null;
+    lastDx = 0;
+  };
+
+  const getTargetHymn = dx => {
+    const bookHymns = getHymnsForCurrentBook();
+    const currentCode = getSelectedNumber();
+    const currentIndex = bookHymns.findIndex(
+      hymn => Number(hymn.code) === Number(currentCode)
+    );
+
+    if (currentIndex === -1) return null;
+
+    const nextIndex = dx < 0
+      ? currentIndex + 1
+      : currentIndex - 1;
+
+    if (nextIndex < 0 || nextIndex >= bookHymns.length) {
+      return null;
+    }
+
+    return bookHymns[nextIndex];
+  };
+
+  const ensurePreview = dx => {
+    const wantedDirection = dx < 0 ? "next" : "prev";
+
+    if (preview && direction === wantedDirection) {
+      return true;
+    }
+
+    if (preview) {
+      preview.remove();
+      preview = null;
+    }
+
+    targetHymn = getTargetHymn(dx);
+    direction = wantedDirection;
+
+    if (!targetHymn) return false;
+
+    preview = hymnLyrics.cloneNode(false);
+    preview.removeAttribute("id");
+    preview.className = "hymn-lyrics page-turn-preview";
+    preview.setAttribute("aria-hidden", "true");
+    preview.textContent = cleanLyrics(targetHymn);
+
+    const fontSize =
+      hymnLyrics.style.getPropertyValue("--lyrics-font-size");
+
+    if (fontSize) {
+      preview.style.setProperty("--lyrics-font-size", fontSize);
+    }
+
+    preview.dataset.direction = direction;
+    hymnLyrics.parentNode.insertBefore(preview, hymnLyrics);
+
+    hymnLyrics.classList.add("page-turn-current");
+    return true;
+  };
+
+  const renderDrag = dx => {
+    if (!ensurePreview(dx)) {
+      /* 已到第一首／最後一首，只給少量阻力感 */
+      const resisted = dx * 0.16;
+      hymnLyrics.classList.add("page-turn-current");
+      hymnLyrics.style.setProperty("--page-dx", `${resisted}px`);
+      hymnLyrics.style.setProperty("--page-progress", "0");
+      return;
+    }
+
+    const width = Math.max(1, hymnLyrics.clientWidth);
+    const clamped = Math.max(-width, Math.min(width, dx));
+    const progress = Math.min(1, Math.abs(clamped) / width);
+
+    hymnLyrics.style.setProperty("--page-dx", `${clamped}px`);
+    hymnLyrics.style.setProperty("--page-progress", String(progress));
+
+    preview.style.setProperty("--page-dx", `${clamped}px`);
+    preview.style.setProperty("--page-progress", String(progress));
+  };
+
+  const finishTurn = completed => {
+    if (!horizontal) {
+      clearPageTurn();
+      return;
+    }
+
+    if (!targetHymn || !preview) {
+      hymnLyrics.style.transition = "transform 180ms ease-out";
+      hymnLyrics.style.setProperty("--page-dx", "0px");
+      window.setTimeout(clearPageTurn, 190);
+      return;
+    }
+
+    if (reduceMotion()) {
+      if (completed) {
+        setSelectedNumber(targetHymn.code);
+        showHymn(targetHymn);
+        requestAnimationFrame(() => {
+          hymnLyrics.scrollIntoView({ behavior: "auto", block: "start" });
+        });
+      }
+      clearPageTurn();
+      return;
+    }
+
+    const width = Math.max(1, hymnLyrics.clientWidth);
+
+    hymnLyrics.classList.add("page-turn-settling");
+    preview.classList.add("page-turn-settling");
+
+    if (completed) {
+      const finalDx = direction === "next" ? -width : width;
+      hymnLyrics.style.setProperty("--page-dx", `${finalDx}px`);
+      hymnLyrics.style.setProperty("--page-progress", "1");
+      preview.style.setProperty("--page-dx", `${finalDx}px`);
+      preview.style.setProperty("--page-progress", "1");
+
+      window.setTimeout(() => {
+        const chosen = targetHymn;
+        clearPageTurn();
+
+        setSelectedNumber(chosen.code);
+        showHymn(chosen);
+
+        requestAnimationFrame(() => {
+          hymnLyrics.scrollIntoView({
+            behavior: "auto",
+            block: "start"
+          });
+        });
+      }, 230);
+    } else {
+      hymnLyrics.style.setProperty("--page-dx", "0px");
+      hymnLyrics.style.setProperty("--page-progress", "0");
+      preview.style.setProperty("--page-dx", "0px");
+      preview.style.setProperty("--page-progress", "0");
+
+      window.setTimeout(clearPageTurn, 230);
+    }
+  };
 
   hymnLyrics.addEventListener("touchstart", event => {
     if (event.touches.length !== 1) {
       tracking = false;
       horizontal = false;
+      clearPageTurn();
       return;
     }
 
+    clearPageTurn();
     startX = event.touches[0].clientX;
     startY = event.touches[0].clientY;
     tracking = true;
@@ -2268,52 +2353,42 @@ function setupLyricsSwipeV13() {
     const dy = event.touches[0].clientY - startY;
 
     if (!horizontal && Math.abs(dx) > 12) {
-      horizontal = Math.abs(dx) > Math.abs(dy) * 1.25;
+      if (Math.abs(dx) > Math.abs(dy) * 1.25) {
+        horizontal = true;
+      } else if (Math.abs(dy) > Math.abs(dx)) {
+        tracking = false;
+        return;
+      }
     }
 
-    if (horizontal) {
-      event.preventDefault();
-    }
+    if (!horizontal) return;
+
+    event.preventDefault();
+    lastDx = dx;
+    renderDrag(dx);
   }, { passive: false });
 
   hymnLyrics.addEventListener("touchend", event => {
-    if (!tracking || !event.changedTouches.length) return;
-
-    const dx = event.changedTouches[0].clientX - startX;
-    const dy = event.changedTouches[0].clientY - startY;
+    if (!tracking) return;
     tracking = false;
 
-    if (
-      Math.abs(dx) < 55 ||
-      Math.abs(dx) <= Math.abs(dy) * 1.25
-    ) {
+    if (!horizontal) {
+      clearPageTurn();
       return;
     }
 
-    const bookHymns = getHymnsForCurrentBook();
-    const currentCode = getSelectedNumber();
-    const currentIndex = bookHymns.findIndex(
-      hymn => Number(hymn.code) === Number(currentCode)
-    );
+    const width = Math.max(1, hymnLyrics.clientWidth);
+    const threshold = Math.min(110, width * 0.28);
+    const completed = Math.abs(lastDx) >= threshold;
 
-    if (currentIndex === -1) return;
+    finishTurn(completed);
+    horizontal = false;
+  }, { passive: true });
 
-    const nextIndex = dx < 0
-      ? currentIndex + 1
-      : currentIndex - 1;
-
-    if (nextIndex < 0 || nextIndex >= bookHymns.length) return;
-
-    const nextHymn = bookHymns[nextIndex];
-
-    /*
-      v17｜左右切歌過渡動畫
-      左滑：目前歌詞向左淡出，新歌詞由右淡入。
-      右滑：目前歌詞向右淡出，新歌詞由左淡入。
-      不建立額外歌詞 DOM，因此不會隨切歌次數累積記憶體。
-    */
-    const direction = dx < 0 ? "next" : "prev";
-    animateLyricsSongChange(nextHymn, direction);
+  hymnLyrics.addEventListener("touchcancel", () => {
+    tracking = false;
+    finishTurn(false);
+    horizontal = false;
   }, { passive: true });
 
   const hymnTop = document.querySelector(".hymn-top");
@@ -2325,12 +2400,10 @@ function setupLyricsSwipeV13() {
   }
 
   const goToFirstVerse = () => {
-    if (hymnLyrics) {
-      hymnLyrics.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }
+    hymnLyrics.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
   };
 
   if (hymnTop) {
