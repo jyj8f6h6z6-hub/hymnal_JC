@@ -2318,10 +2318,49 @@ function setupLyricsSwipeV13() {
 function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v2.0";
+  el.textContent="Hymnal JC · v2.1";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
   setupLyricsSwipeV13();
   setupAppVersionV20();
 });
+
+/* =========================================================
+   v2.1｜許願／回報（Google 表單）
+========================================================= */
+function setupFeedbackV21(){
+  const button=document.getElementById("feedbackButton");
+  const modal=document.getElementById("feedbackModal");
+  const errorButton=document.getElementById("reportErrorButton");
+  const requestButton=document.getElementById("requestSongButton");
+  if(!button||!modal||!errorButton||!requestButton)return;
+
+  const FORM_BASE="https://docs.google.com/forms/d/e/1FAIpQLScsx5oPnBF4uPp4zKsjj494xxDuCjXdDveZ4MJ9BpfeaGx5bA/viewform";
+  const TYPE_ENTRY="entry.502841526";
+  const ERROR_SONG_ENTRY="entry.190870664";
+
+  const openModal=()=>{modal.classList.remove("hidden");modal.setAttribute("aria-hidden","false");};
+  const closeModal=()=>{modal.classList.add("hidden");modal.setAttribute("aria-hidden","true");};
+  button.addEventListener("click",openModal);
+  modal.querySelectorAll("[data-feedback-close]").forEach(el=>el.addEventListener("click",closeModal));
+  document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&!modal.classList.contains("hidden"))closeModal();});
+
+  function currentSongLabel(){
+    const title=(document.getElementById("hymnTitle")?.textContent||"").trim();
+    const meta=(document.getElementById("hymnBook")?.textContent||"").trim();
+    if(title && title!=="未命名詩歌") return meta ? `${meta}｜${title}` : title;
+    return "";
+  }
+  function openForm(params){
+    const url=new URL(FORM_BASE);
+    url.searchParams.set("usp","pp_url");
+    Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+    window.open(url.toString(),"_blank","noopener");
+    closeModal();
+  }
+  errorButton.addEventListener("click",()=>openForm({[TYPE_ENTRY]:"錯誤回報",[ERROR_SONG_ENTRY]:currentSongLabel()}));
+  requestButton.addEventListener("click",()=>openForm({[TYPE_ENTRY]:"增加詩歌需求"}));
+}
+
+document.addEventListener("DOMContentLoaded",setupFeedbackV21);

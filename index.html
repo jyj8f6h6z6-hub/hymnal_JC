@@ -25,7 +25,13 @@
         <div class="brand-subtitle">選歌號或直接搜尋</div>
       </div>
 
-      <button
+      <div class="header-actions">
+        <button id="feedbackButton" class="feedback-button" type="button" aria-label="許願／回報" title="許願／回報">
+          <span aria-hidden="true">💡</span>
+          <span class="feedback-label">許願／回報</span>
+        </button>
+
+        <button
         id="themeButton"
         class="theme-button"
         type="button"
@@ -35,6 +41,7 @@
         <span aria-hidden="true">◐</span>
         <span id="themeName">灰藍</span>
       </button>
+      </div>
     </header>
 
     <section class="book-section" aria-label="選擇詩歌本">
@@ -202,6 +209,23 @@
       </div>
     </main>
 
+  </div>
+
+  <div id="feedbackModal" class="feedback-modal hidden" aria-hidden="true">
+    <div class="feedback-backdrop" data-feedback-close></div>
+    <div class="feedback-dialog" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+      <button class="feedback-close" type="button" aria-label="關閉" data-feedback-close>×</button>
+      <h2 id="feedbackTitle">許願／回報</h2>
+      <p>想告訴我們什麼？</p>
+      <div class="feedback-choices">
+        <button id="reportErrorButton" type="button" class="feedback-choice">
+          <span class="feedback-choice-icon">🐛</span><span><strong>錯誤回報</strong><small>回報目前詩歌的歌詞、歌名或顯示問題</small></span>
+        </button>
+        <button id="requestSongButton" type="button" class="feedback-choice">
+          <span class="feedback-choice-icon">🎵</span><span><strong>增加詩歌需求</strong><small>許願希望加入 Hymnal JC 的詩歌</small></span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <script src="./hymns.js"></script>

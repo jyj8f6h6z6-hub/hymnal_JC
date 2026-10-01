@@ -1874,3 +1874,20 @@ body.other-songs-mode .number-section {
   flex: 1 1 100% !important;
   max-width: none !important;
 }
+
+/* =========================================================
+   v2.1｜許願／回報
+========================================================= */
+.header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.feedback-button{appearance:none;min-height:46px;border:1px solid var(--border-color);border-radius:999px;background:var(--card-bg);color:var(--text-main);padding:8px 14px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 3px 12px rgba(15,23,42,.05)}
+.feedback-button:active{transform:scale(.97)}
+.feedback-modal{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:18px}
+.feedback-modal.hidden{display:none}
+.feedback-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.48);backdrop-filter:blur(3px)}
+.feedback-dialog{position:relative;width:min(440px,100%);background:var(--card-bg);color:var(--text-main);border:1px solid var(--border-color);border-radius:24px;padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.24)}
+.feedback-dialog h2{margin:0 42px 5px 0;font-size:25px}.feedback-dialog>p{margin:0 0 18px;color:var(--text-muted);font-weight:700}
+.feedback-close{position:absolute;right:14px;top:12px;width:38px;height:38px;border:0;border-radius:50%;background:transparent;color:var(--text-main);font-size:28px;cursor:pointer}
+.feedback-choices{display:grid;gap:12px}.feedback-choice{width:100%;border:1px solid var(--border-color);border-radius:18px;background:var(--panel-bg);color:var(--text-main);padding:16px;text-align:left;display:flex;align-items:center;gap:14px;cursor:pointer}
+.feedback-choice:active{transform:scale(.985)}.feedback-choice-icon{font-size:27px}.feedback-choice strong{display:block;font-size:17px;margin-bottom:4px}.feedback-choice small{display:block;color:var(--text-muted);font-size:13px;line-height:1.45}
+@media(max-width:700px){.header-actions{gap:7px}.feedback-button,.theme-button{min-height:44px}.feedback-button{width:44px;padding:0}.feedback-label{display:none}}
+@media(max-width:390px){.header-actions{gap:5px}}
