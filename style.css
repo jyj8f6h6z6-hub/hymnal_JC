@@ -1179,7 +1179,7 @@ button, input { font-family: inherit; }
 .book-cover img {
   width: 100% !important;
   height: 100% !important;
-  object-fit: cover !important;
+  object-fit: contain !important;
   object-position: center center !important;
   border-radius: 14px !important;
 }
@@ -1188,7 +1188,7 @@ button, input { font-family: inherit; }
 .book-button[data-book="1"] .book-cover-image,
 .book-button[data-book="2"] .book-cover-image,
 .book-button[data-book="5"] .book-cover-image {
-  transform: scale(1.16);
+  transform: none;
 }
 
 .book-button[data-book="3"] .book-cover-image {
