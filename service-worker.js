@@ -6,7 +6,7 @@
    4. 靜態資源採 stale-while-revalidate：立即使用快取，同時背景更新。
 */
 
-const CACHE_VERSION = "hymnal-offline-v2-20261001-v2.1";
+const CACHE_VERSION = "hymnal-offline-v2-20261001-v2.1.1";
 const CORE_CACHE = `${CACHE_VERSION}-core`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
