@@ -1891,3 +1891,20 @@ body.other-songs-mode .number-section {
 .feedback-choice:active{transform:scale(.985)}.feedback-choice-icon{font-size:27px}.feedback-choice strong{display:block;font-size:17px;margin-bottom:4px}.feedback-choice small{display:block;color:var(--text-muted);font-size:13px;line-height:1.45}
 @media(max-width:700px){.header-actions{gap:7px}.feedback-button,.theme-button{min-height:44px}.feedback-button{width:44px;padding:0}.feedback-label{display:none}}
 @media(max-width:390px){.header-actions{gap:5px}}
+
+/* ===== 三本實體封面：分開調整放大倍率＋位置 ===== */
+
+/* 1. 詩歌本 */
+.book-button[data-book="1"] .book-cover-image {
+    transform: translate(-3px, -5px) scale(1.5);
+}
+
+/* 2. 詩歌補充本 */
+.book-button[data-book="2"] .book-cover-image {
+    transform: translate(-2px, -3px) scale(1.4);
+}
+
+/* 5. 兒童詩歌 */
+.book-button[data-book="5"] .book-cover-image {
+    transform: translate(-1px, 0px) scale(1.35);
+}
