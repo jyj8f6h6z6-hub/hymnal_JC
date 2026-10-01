@@ -1906,5 +1906,5 @@ body.other-songs-mode .number-section {
 
 /* 5. 兒童詩歌 */
 .book-button[data-book="5"] .book-cover-image {
-    transform: translate(-1px, 0px) scale(1.35);
+    transform: translate(-2px, 0px) scale(1.35);
 }
