@@ -1908,3 +1908,25 @@ body.other-songs-mode .number-section {
 .book-button[data-book="5"] .book-cover-image {
     transform: translate(-2px, 0px) scale(1.35);
 }
+
+/* =========================================================
+   手機版｜詩歌本封面位置與大小獨立調整
+   不影響電腦版
+   ========================================================= */
+@media (max-width: 700px) {
+
+    /* 1. 詩歌本 */
+    .book-button[data-book="1"] .book-cover-image {
+        transform: translate(0px, 0px) scale(1.4) !important;
+    }
+
+    /* 2. 詩歌補充本 */
+    .book-button[data-book="2"] .book-cover-image {
+        transform: translate(0px, 0px) scale(1.3) !important;
+    }
+
+    /* 5. 兒童詩歌 */
+    .book-button[data-book="5"] .book-cover-image {
+        transform: translate(0px, 0px) scale(1.35) !important;
+    }
+}
