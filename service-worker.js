@@ -3,10 +3,10 @@
    1. 首次連網後預先保存首頁、CSS、JS、全部 hymns.js 歌詞資料。
    2. 圖片個別快取；即使某張圖片不存在，也不影響核心離線功能安裝。
    3. 導覽請求採 network-first：有網路優先取得新版，離線時回退快取首頁。
-   4. 靜態資源採 stale-while-revalidate：立即使用快取，同時背景更新。
+   4. 核心程式檔採 network-first：有網路優先取得新版，離線時使用快取。
 */
 
-const CACHE_VERSION = "hymnal-offline-v2-20261001-v2.1.2";
+const CACHE_VERSION = "hymnal-offline-v2-20261005-v2.2";
 const CORE_CACHE = `${CACHE_VERSION}-core`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -85,7 +85,28 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // CSS / JS / 圖片 / manifest：快取優先，連網時順便更新。
+  // 核心程式檔：有網路優先拿最新版；離線時回退快取。
+  const isCoreProgram = [
+    "/style.css", "/hymns.js", "/app.js", "/enhancements.js", "/manifest.webmanifest"
+  ].some((path) => url.pathname.endsWith(path));
+
+  if (isCoreProgram) {
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(request, { cache: "no-store" });
+        if (response && response.ok) {
+          const cache = await caches.open(RUNTIME_CACHE);
+          await cache.put(request, response.clone());
+        }
+        return response;
+      } catch (_) {
+        return (await caches.match(request)) || new Response("Offline", { status: 503 });
+      }
+    })());
+    return;
+  }
+
+  // 圖片等其他靜態資源：快取優先，背景更新。
   event.respondWith((async () => {
     const cached = await caches.match(request);
     const networkPromise = fetch(request).then(async (response) => {
