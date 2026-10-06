@@ -114,13 +114,13 @@ const BOOKS = [
 /* 歌詞標題列使用的歌本簡稱 */
 function getCompactBookName(bookId) {
   const compactNames = {
-    1: "詩歌",
-    2: "補",
-    3: "頌",
-    4: "紅本",
-    5: "兒童",
-    6: "藍本",
-    7: "其他"
+    1: "詩歌本",
+    2: "詩歌補充本",
+    3: "新歌頌詠",
+    4: "紅本新詩",
+    5: "兒童詩歌",
+    6: "藍本新詩",
+    7: "其他詩歌"
   };
 
   return compactNames[Number(bookId)] || `歌本${bookId}`;
