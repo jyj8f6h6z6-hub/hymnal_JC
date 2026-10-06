@@ -6,7 +6,7 @@
    4. 核心程式檔採 network-first：有網路優先取得新版，離線時使用快取。
 */
 
-const CACHE_VERSION = "hymnal-offline-v2-20261005-v2.2";
+const CACHE_VERSION = "hymnal-offline-v2-20261006-v2.2.1";
 const CORE_CACHE = `${CACHE_VERSION}-core`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

@@ -2140,7 +2140,7 @@ function renderSearchResults(matches) {
 
     const empty = document.createElement("div");
     empty.className = "search-no-result";
-    empty.textContent = "找不到符合的詩歌";
+    empty.textContent = "找不到詩歌嗎？試著點上面的 💡 小燈泡看看";
     searchResults.appendChild(empty);
     return;
 
