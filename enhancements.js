@@ -512,12 +512,21 @@ function centerBookButton(
 */
 
 selectBook = function(
-  bookId
+  bookId,
+  options = {}
 ) {
 
   originalSelectBook(
     bookId
   );
+
+  /*
+    從搜尋結果跨歌本時，不執行手機歌本封面的 smooth 置中。
+    一般直接點選歌本時仍維持原本的置中效果。
+  */
+  if (options.skipCenter) {
+    return;
+  }
 
   requestAnimationFrame(
     () => {
@@ -2318,7 +2327,7 @@ function setupLyricsSwipeV13() {
 function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v2.2.2";
+  el.textContent="Hymnal JC · v2.2.3";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{

@@ -114,13 +114,13 @@ const BOOKS = [
 /* 歌詞標題列使用的歌本簡稱 */
 function getCompactBookName(bookId) {
   const compactNames = {
-    1: "詩歌本",
-    2: "詩歌補充本",
-    3: "新歌頌詠",
-    4: "紅本新詩",
-    5: "兒童詩歌",
-    6: "藍本新詩",
-    7: "其他詩歌"
+    1: "詩歌",
+    2: "補",
+    3: "頌",
+    4: "紅本",
+    5: "兒童",
+    6: "藍本",
+    7: "其他"
   };
 
   return compactNames[Number(bookId)] || `歌本${bookId}`;
@@ -2017,11 +2017,6 @@ function runSearch(rawQuery) {
 
   for (const hymn of hymns) {
 
-    /* 在「其他詩歌」頁面搜尋時，只搜尋其他詩歌；其餘頁面維持全站搜尋。 */
-    if (isOtherSongsBook() && Number(hymn.book) !== 7) {
-      continue;
-    }
-
     const title = normalizeSearchText(hymn.title);
     const lyrics = normalizeSearchText(hymn.lyrics);
     const code = Number(hymn.code);
@@ -2234,7 +2229,11 @@ function openSearchResult(hymn) {
     return;
   }
 
-  selectBook(hymn.book);
+  /*
+    搜尋結果跨歌本時，只切換歌本，不觸發手機歌本封面的置中動畫。
+    避免封面列的 smooth 捲動干擾後續定位到歌詞卡片。
+  */
+  selectBook(hymn.book, { skipCenter: true });
 
   if (Number(hymn.book) !== 7) {
     setSelectedNumber(hymn.code);
