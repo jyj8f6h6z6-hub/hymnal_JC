@@ -871,6 +871,14 @@ let lyricsPinchStartDistance = null;
 let lyricsPinchStartFont = null;
 let lyricsLastTapTime = 0;
 
+// v2.2.4｜單指雙擊後按住，上下拖曳調整歌詞大小
+let lyricsDoubleHoldCandidate = false;
+let lyricsDoubleHoldZooming = false;
+let lyricsDoubleHoldStartY = null;
+let lyricsDoubleHoldStartFont = null;
+const LYRICS_DOUBLE_HOLD_THRESHOLD = 9;
+const LYRICS_DOUBLE_HOLD_SENSITIVITY = 0.08;
+
 
 function clampLyricsFont(value) {
 
@@ -1017,7 +1025,10 @@ function setupLyricsFontGestures() {
           Date.now();
 
         /*
-          手機雙點歌詞：恢復預設字體。
+          v2.2.4：
+          - 快速雙擊並放開：恢復預設字體。
+          - 第二下不放開並上下拖曳：單指調整字體大小。
+          不在第二次 touchstart 立刻重設，避免和「雙擊後按住」衝突。
         */
         if (
           now -
@@ -1025,15 +1036,21 @@ function setupLyricsFontGestures() {
           320
         ) {
 
-          resetLyricsFontSize();
+          lyricsDoubleHoldCandidate = true;
+          lyricsDoubleHoldZooming = false;
+          lyricsDoubleHoldStartY = event.touches[0].clientY;
+          lyricsDoubleHoldStartFont =
+            lyricsCurrentFont ||
+            readCurrentLyricsFont();
           lyricsLastTapTime = 0;
           event.preventDefault();
 
         }
         else {
 
-          lyricsLastTapTime =
-            now;
+          lyricsDoubleHoldCandidate = false;
+          lyricsDoubleHoldZooming = false;
+          lyricsLastTapTime = now;
 
         }
 
@@ -1049,6 +1066,33 @@ function setupLyricsFontGestures() {
   hymnLyrics.addEventListener(
     "touchmove",
     event => {
+
+      /* 單指：雙擊第二下按住後，上拉放大、下拉縮小。 */
+      if (
+        event.touches.length === 1 &&
+        lyricsDoubleHoldCandidate &&
+        lyricsDoubleHoldStartY !== null &&
+        lyricsDoubleHoldStartFont !== null
+      ) {
+
+        const deltaY =
+          lyricsDoubleHoldStartY -
+          event.touches[0].clientY;
+
+        if (
+          lyricsDoubleHoldZooming ||
+          Math.abs(deltaY) >= LYRICS_DOUBLE_HOLD_THRESHOLD
+        ) {
+          lyricsDoubleHoldZooming = true;
+          hymnLyrics.classList.add("is-font-zooming");
+          setLyricsFontSize(
+            lyricsDoubleHoldStartFont +
+            deltaY * LYRICS_DOUBLE_HOLD_SENSITIVITY
+          );
+          event.preventDefault();
+        }
+        return;
+      }
 
       if (
         event.touches.length !== 2 ||
@@ -1094,6 +1138,20 @@ function setupLyricsFontGestures() {
 
       lyricsPinchStartDistance = null;
       lyricsPinchStartFont = null;
+
+      /*
+        雙擊第二下若沒有進入拖曳縮放，維持原本「雙擊重設」功能。
+        若已拖曳縮放，放開後保留目前字體大小。
+      */
+      if (lyricsDoubleHoldCandidate) {
+        if (!lyricsDoubleHoldZooming) {
+          resetLyricsFontSize();
+        }
+        lyricsDoubleHoldCandidate = false;
+        lyricsDoubleHoldZooming = false;
+        lyricsDoubleHoldStartY = null;
+        lyricsDoubleHoldStartFont = null;
+      }
 
       hymnLyrics.classList.remove(
         "is-font-zooming"
@@ -2327,7 +2385,7 @@ function setupLyricsSwipeV13() {
 function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v2.2.3";
+  el.textContent="Hymnal JC · v2.2.4";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
