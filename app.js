@@ -1127,6 +1127,28 @@ function stepWheel(
 
 
 
+// v2.3.0：每幀最多更新一次轉盤選中樣式與歌號，避免高速滑動時反覆修改 DOM。
+const pendingWheelVisuals = new Map();
+let wheelVisualFrame = 0;
+function scheduleWheelVisualUpdate(wheel, value) {
+  pendingWheelVisuals.set(wheel, value);
+  if (wheelVisualFrame) return;
+  wheelVisualFrame = requestAnimationFrame(() => {
+    wheelVisualFrame = 0;
+    for (const [target, selected] of pendingWheelVisuals) updateWheelVisual(target, selected);
+    pendingWheelVisuals.clear();
+  });
+}
+let numberDisplayFrame = 0;
+function scheduleNumberDisplayUpdate() {
+  if (numberDisplayFrame) return;
+  numberDisplayFrame = requestAnimationFrame(() => {
+    numberDisplayFrame = 0;
+    const value = formatNumber(getSelectedNumber());
+    if (numberDisplay.textContent !== value) numberDisplay.textContent = value;
+  });
+}
+
 /* =========================================================
    滾輪正在滑動
 ========================================================= */
@@ -1146,10 +1168,7 @@ function handleWheelScroll(
     只更新滾輪視覺。
   */
 
-  updateWheelVisual(
-    wheel,
-    value
-  );
+  scheduleWheelVisualUpdate(wheel, value);
 
 
   /*
@@ -1180,10 +1199,7 @@ function handleWheelScroll(
     不會載入詩歌。
   */
 
-  numberDisplay.textContent =
-    formatNumber(
-      getSelectedNumber()
-    );
+  scheduleNumberDisplayUpdate();
 
 
   /*
@@ -1895,6 +1911,31 @@ function normalizeSearchText(value) {
 }
 
 
+// v2.3.0：歌詞只正規化一次；索引保留原始 hymns 的排序與物件參照。
+let cachedSearchIndex = null;
+function getSearchIndex() {
+  if (!cachedSearchIndex) {
+    cachedSearchIndex = hymns.map(hymn => {
+      const title = normalizeSearchText(hymn.title);
+      const lyrics = normalizeSearchText(hymn.lyrics);
+      return { hymn, title, lyrics, searchableText: title + lyrics, code: Number(hymn.code) };
+    });
+  }
+  return cachedSearchIndex;
+}
+
+// 與原版相同：非重疊計數，避免重複關鍵字改變搜尋結果。
+function countSearchOccurrences(text, keyword) {
+  let count = 0, startIndex = 0;
+  while (true) {
+    const foundIndex = text.indexOf(keyword, startIndex);
+    if (foundIndex === -1) return count;
+    count++;
+    startIndex = foundIndex + keyword.length;
+  }
+}
+
+
 function setupSearch() {
 
   if (!searchInput || !searchResults) {
@@ -2014,58 +2055,23 @@ function runSearch(rawQuery) {
     : null;
 
   const matches = [];
+  // 複數關鍵字需求只需計算一次，而不是逐首重複建立 Map。
+  const keywordCounts = new Map();
+  for (const keyword of keywords) {
+    keywordCounts.set(keyword, (keywordCounts.get(keyword) || 0) + 1);
+  }
 
-  for (const hymn of hymns) {
-
-    const title = normalizeSearchText(hymn.title);
-    const lyrics = normalizeSearchText(hymn.lyrics);
-    const code = Number(hymn.code);
+  for (const { hymn, title, lyrics, searchableText, code } of getSearchIndex()) {
 
     /*
       標題與歌詞合併後做 AND 搜尋。
       這樣關鍵字可以一個在標題、一個在歌詞，
       也可以全部都在歌詞中。
     */
-    const searchableText = `${title}${lyrics}`;
-
-    /*
-      同一關鍵字重複輸入時，重複次數就是最低出現次數。
-
-      例如輸入：
-      喜樂 喜樂 喜樂 喜樂 喜樂
-
-      代表這首詩歌的可搜尋文字中，「喜樂」至少要出現 5 次。
-      因此只有 4 次的詩歌會被排除；有 5 次以上的仍會顯示。
-    */
-    const keywordCounts = new Map();
-
-    for (const keyword of keywords) {
-      keywordCounts.set(
-        keyword,
-        (keywordCounts.get(keyword) || 0) + 1
-      );
-    }
-
-    const countOccurrences = (text, keyword) => {
-      if (!keyword) return 0;
-
-      let count = 0;
-      let startIndex = 0;
-
-      while (true) {
-        const foundIndex = text.indexOf(keyword, startIndex);
-        if (foundIndex === -1) break;
-
-        count += 1;
-        startIndex = foundIndex + keyword.length;
-      }
-
-      return count;
-    };
-
+    // 使用啟動後建立的靜態搜尋索引（可搜尋標題＋歌詞）。
     const allKeywordsMatch = Array.from(keywordCounts.entries()).every(
       ([keyword, requiredCount]) =>
-        countOccurrences(searchableText, keyword) >= requiredCount
+        countSearchOccurrences(searchableText, keyword) >= requiredCount
     );
 
     let score = 99;

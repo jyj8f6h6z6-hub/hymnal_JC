@@ -2,11 +2,11 @@
    核心原則：
    1. 首次連網後預先保存首頁、CSS、JS、全部 hymns.js 歌詞資料。
    2. 圖片個別快取；即使某張圖片不存在，也不影響核心離線功能安裝。
-   3. 導覽請求採 network-first：有網路優先取得新版，離線時回退快取首頁。
-   4. 核心程式檔採 network-first：有網路優先取得新版，離線時使用快取。
+   3. 導覽與核心程式採同版本 cache-first，避免跨版混用。
+   4. 新版完整安裝後等待舊頁面結束，不打斷聚會閱讀。
 */
 
-const CACHE_VERSION = "hymnal-offline-v2-20261008-v2.2.4";
+const CACHE_VERSION = "hymnal-offline-v2-20261012-v2.3.0";
 const CORE_CACHE = `${CACHE_VERSION}-core`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -43,7 +43,7 @@ self.addEventListener("install", (event) => {
       })
     );
 
-    await self.skipWaiting();
+    // 不呼叫 skipWaiting：讓目前閱讀中的舊頁面繼續使用完整舊版。
   })());
 });
 
@@ -55,79 +55,51 @@ self.addEventListener("activate", (event) => {
         .filter((key) => key.startsWith("hymnal-offline-") && key !== CORE_CACHE && key !== RUNTIME_CACHE)
         .map((key) => caches.delete(key))
     );
-    await self.clients.claim();
+    // 不強制接管現有頁面，新版於下次開啟／導航時使用。
   })());
 });
 
+// 所有版本化核心資源均從已完成安裝的同版快取供應。
+// 不再對 app.js / hymns.js 等獨立採 network-first，以免讀到混合版本。
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
-
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // 頁面導覽：有網路就更新首頁；斷網時使用已保存的首頁。
   if (request.mode === "navigate") {
     event.respondWith((async () => {
-      try {
-        const response = await fetch(request);
-        if (response && response.ok) {
-          const cache = await caches.open(RUNTIME_CACHE);
-          cache.put(request, response.clone());
-        }
-        return response;
-      } catch (_) {
-        return (await caches.match(request)) ||
-               (await caches.match("./index.html")) ||
-               (await caches.match("./"));
-      }
+      const cache = await caches.open(CORE_CACHE);
+      return (await cache.match("./index.html")) ||
+             (await cache.match("./")) ||
+             fetch(request);
     })());
     return;
   }
 
-  // 核心程式檔：有網路優先拿最新版；離線時回退快取。
-  const isCoreProgram = [
-    "/style.css", "/hymns.js", "/app.js", "/enhancements.js", "/manifest.webmanifest"
-  ].some((path) => url.pathname.endsWith(path));
-
-  if (isCoreProgram) {
+  const corePaths = ["/style.css", "/hymns.js", "/app.js", "/enhancements.js", "/manifest.webmanifest"];
+  if (corePaths.some(path => url.pathname.endsWith(path))) {
     event.respondWith((async () => {
-      try {
-        const response = await fetch(request, { cache: "no-store" });
-        if (response && response.ok) {
-          const cache = await caches.open(RUNTIME_CACHE);
-          await cache.put(request, response.clone());
-        }
-        return response;
-      } catch (_) {
-        return (await caches.match(request)) || new Response("Offline", { status: 503 });
-      }
+      const cache = await caches.open(CORE_CACHE);
+      return (await cache.match(request)) || fetch(request);
     })());
     return;
   }
 
-  // 圖片等其他靜態資源：快取優先，背景更新。
+  // 圖片採快取優先，背景更新；單張圖片失效不影響歌詞離線使用。
   event.respondWith((async () => {
     const cached = await caches.match(request);
-    const networkPromise = fetch(request).then(async (response) => {
+    const networkPromise = fetch(request).then(async response => {
       if (response && response.ok) {
         const cache = await caches.open(RUNTIME_CACHE);
         await cache.put(request, response.clone());
       }
       return response;
     }).catch(() => null);
-
     if (cached) {
       event.waitUntil(networkPromise);
       return cached;
     }
-
-    const network = await networkPromise;
-    if (network) return network;
-
-    return new Response("Offline", {
-      status: 503,
-      headers: { "Content-Type": "text/plain; charset=utf-8" }
-    });
+    return (await networkPromise) || new Response("Offline", { status: 503 });
   })());
 });

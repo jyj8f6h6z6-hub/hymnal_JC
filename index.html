@@ -236,7 +236,6 @@
   <script>
     if ("serviceWorker" in navigator) {
       let lastUpdateCheck = 0;
-      let reloadingForUpdate = false;
       const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;
 
       async function checkForAppUpdate(registration, force = false) {
@@ -270,12 +269,7 @@
         }
       });
 
-      // 新版 Service Worker 接手後，自動重新整理一次套用新版。
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (reloadingForUpdate) return;
-        reloadingForUpdate = true;
-        window.location.reload();
-      });
+      // v2.3.0：不在聚會閱讀中自動重新整理；新版於所有舊頁面關閉後接手。
     }
   </script>
 </body>
