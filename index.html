@@ -255,6 +255,20 @@
             updateViaCache: "none"
           });
 
+          // v2.3.1：新版接手後，等使用者離開再回到 App 時才重新載入，不打斷閱讀。
+          let hadController = !!navigator.serviceWorker.controller;
+          let needReload = false;
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (hadController) needReload = true;
+            hadController = true;
+          });
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible" && needReload) {
+              needReload = false;
+              location.reload();
+            }
+          });
+
           // 每次啟動 App 都立即檢查一次。
           await checkForAppUpdate(registration, true);
 
@@ -269,7 +283,7 @@
         }
       });
 
-      // v2.3.0：不在聚會閱讀中自動重新整理；新版於所有舊頁面關閉後接手。
+      // v2.3.1：新版立即啟用；畫面於使用者回到 App 時才重新載入，閱讀中不會被打斷。
     }
   </script>
 </body>
