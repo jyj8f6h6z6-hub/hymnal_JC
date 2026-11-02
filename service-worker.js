@@ -6,7 +6,7 @@
    4. 新版完整安裝後立即啟用，但不強制刷新畫面（v2.3.1）。
 */
 
-const CACHE_VERSION = "hymnal-offline-v2-20261102-v2.3.2";
+const CACHE_VERSION = "hymnal-offline-v2-20261102-v2.3.3";
 const CORE_CACHE = `${CACHE_VERSION}-core`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -75,6 +75,10 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // v2.3.3：頁面端的「同步檢查」帶有此標頭，必須直接問網路（讓瀏覽器做 ETag 條件請求），
+  // 否則會被下面的快取優先規則攔截，永遠只比對到自己。
+  if (request.headers.get("x-hymnal-sync")) return;
 
   if (request.mode === "navigate") {
     event.respondWith((async () => {

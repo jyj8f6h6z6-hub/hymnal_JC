@@ -253,7 +253,7 @@
         for (const file of SYNC_FILES) {
           try {
             const url = new URL(file, location.href).href;
-            const fresh = await fetch(url, { cache: "no-cache" });
+            const fresh = await fetch(url, { cache: "no-cache", headers: { "x-hymnal-sync": "1" } });
             if (!fresh.ok) continue;
             const cached = await cache.match(url);
             let changed = !cached;
@@ -269,6 +269,18 @@
           } catch (error) {
             // 離線或網路失敗時略過，繼續使用快取。
           }
+        }
+        // 剛開啟 App 的前 8 秒內發現新版：直接重新載入一次（尚未開始閱讀）。
+        // 之後發現的新版，等使用者離開再回到 App 時才載入。
+        if (needReload && performance.now() < 8000) {
+          try {
+            const last = Number(sessionStorage.getItem("hymnalSyncReload") || 0);
+            if (Date.now() - last > 30000) {
+              sessionStorage.setItem("hymnalSyncReload", String(Date.now()));
+              needReload = false;
+              location.reload();
+            }
+          } catch (error) { /* 忽略 */ }
         }
       }
 

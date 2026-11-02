@@ -1,5 +1,10 @@
 # Hymnal JC 版本更新紀錄
 
+## v2.3.3（2026-11-02）
+- 修正 v2.3.2 的自動同步無效：同步檢查的請求被 Service Worker 的快取優先規則攔截，只會比對到快取自己，永遠偵測不到線上新檔。現在 Service Worker 遇到同步請求（`x-hymnal-sync` 標頭）會直接走網路。
+- 剛開啟 App 的 8 秒內發現新版，會直接重新載入一次，不必再離開重進；閱讀中發現的新版仍等回到 App 時才載入。30 秒內不重複重新載入，避免迴圈。
+- `CACHE_VERSION` 升為 v2.3.3。
+
 ## v2.3.2（2026-11-02）
 - 詩歌：新增其他詩歌第 1053 首〈一日，當你〉，並調整歌詞。
 - 離線更新自動化：App 啟動與回到前景時，會以 ETag 比對線上與快取中的 `index.html`、`style.css`、`hymns.js`、`app.js`、`enhancements.js`、`manifest.webmanifest`，內容不同就自動更新快取，下次回到 App 時重新載入。之後只修改歌詞時，不必再手動升 `CACHE_VERSION`。
