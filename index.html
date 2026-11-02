@@ -238,6 +238,40 @@
       let lastUpdateCheck = 0;
       const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;
 
+      // v2.3.2：自動同步核心檔案。
+      // 以條件式請求（ETag）比對線上與快取中的檔案，內容不同就更新快取，
+      // 之後只要回到 App 就會重新載入新版，不必再手動升 CACHE_VERSION。
+      const SYNC_FILES = ["./index.html", "./style.css", "./hymns.js", "./app.js", "./enhancements.js", "./manifest.webmanifest"];
+      let needReload = false;
+
+      async function syncCoreFiles() {
+        if (!("caches" in window)) return;
+        const keys = await caches.keys();
+        const coreKey = keys.find((k) => k.startsWith("hymnal-offline-") && k.endsWith("-core"));
+        if (!coreKey) return;
+        const cache = await caches.open(coreKey);
+        for (const file of SYNC_FILES) {
+          try {
+            const url = new URL(file, location.href).href;
+            const fresh = await fetch(url, { cache: "no-cache" });
+            if (!fresh.ok) continue;
+            const cached = await cache.match(url);
+            let changed = !cached;
+            if (cached) {
+              const a = fresh.headers.get("etag");
+              const b = cached.headers.get("etag");
+              changed = a && b ? a !== b : (await fresh.clone().text()) !== (await cached.clone().text());
+            }
+            if (changed) {
+              await cache.put(url, fresh.clone());
+              needReload = true;
+            }
+          } catch (error) {
+            // 離線或網路失敗時略過，繼續使用快取。
+          }
+        }
+      }
+
       async function checkForAppUpdate(registration, force = false) {
         const now = Date.now();
         if (!force && now - lastUpdateCheck < UPDATE_CHECK_INTERVAL) return;
@@ -247,6 +281,7 @@
         } catch (error) {
           console.warn("新版檢查失敗：", error);
         }
+        await syncCoreFiles();
       }
 
       window.addEventListener("load", async () => {
@@ -257,7 +292,6 @@
 
           // v2.3.1：新版接手後，等使用者離開再回到 App 時才重新載入，不打斷閱讀。
           let hadController = !!navigator.serviceWorker.controller;
-          let needReload = false;
           navigator.serviceWorker.addEventListener("controllerchange", () => {
             if (hadController) needReload = true;
             hadController = true;
