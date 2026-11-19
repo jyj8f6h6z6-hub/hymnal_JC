@@ -1942,6 +1942,8 @@ function setupSearch() {
     return;
   }
 
+  setupSearchSuggest();
+
   searchInput.addEventListener(
     "input",
     () => {
@@ -1964,10 +1966,15 @@ function setupSearch() {
     "keydown",
     event => {
 
+      if (handleSuggestKey(event)) {
+        return;
+      }
+
       if (
         event.key === "Enter" &&
         searchResults.querySelector(".search-result")
       ) {
+        closeSearchSuggest();
         event.preventDefault();
         searchResults
           .querySelector(".search-result")
@@ -1984,12 +1991,400 @@ function setupSearch() {
       () => {
 
         searchInput.value = "";
+        closeSearchSuggest();
         clearSearchResults();
         searchInput.focus();
 
       }
     );
 
+  }
+
+}
+
+
+/* =========================================================
+   v2.4.0｜搜尋提示詞
+   輸入一個字起，列出「歌名／詞語／短句」供點選。
+   - 歌名：標題含有輸入文字
+   - 詞語：從歌詞中把輸入文字往後延伸 1～3 字，取出現最多者
+   - 短句：歌詞中以標點切開的短句
+   純數字不提示（直接搜尋歌號）。
+========================================================= */
+
+const SUGGEST_MAX_TITLES = 3;
+const SUGGEST_MAX_WORDS = 3;
+const SUGGEST_MAX_CLAUSES = 4;
+
+let suggestIndex = null;
+let suggestBox = null;
+let suggestItems = [];
+let suggestActive = -1;
+let suggestTimer = null;
+let suggestToken = "";
+
+const SUGGEST_STOP_END = "的了是所我你他她祂在與和就也都要把被對為以又並而有之這那不";
+const CJK_PATTERN = /[㐀-鿿]/;
+
+function buildSuggestIndex() {
+
+  if (suggestIndex) return suggestIndex;
+
+  const clauseMap = new Map();      // key -> { n }
+  const titleMap = new Map();       // key -> { text, n }
+
+  const hymnList = Array.isArray(hymns) ? hymns : [];
+
+  hymnList.forEach((hymn, hymnIndex) => {
+
+    const titleText = String(hymn.title || "").trim();
+    const titleKey = normalizeSearchText(titleText);
+
+    if (titleKey && CJK_PATTERN.test(titleKey)) {
+      const old = titleMap.get(titleKey);
+      if (old) old.n++;
+      else titleMap.set(titleKey, { text: titleText, n: 1 });
+    }
+
+    const lines = String(hymn.lyrics || "").split(/\r?\n/);
+
+    for (const line of lines) {
+
+      // 略過調號、拍號、歌號等非歌詞行，例如「降 A大調4/4」「8583(英1)」。
+      if (/\d\s*\/\s*\d|[大小]調|^\s*[\d(（]/.test(line)) continue;
+
+      const parts = line.split(/[，。；：！？、,.;:!?「」『』（）()—\-－\s]+/);
+
+      for (const part of parts) {
+
+        const key = normalizeSearchText(part);
+        if (key.length < 2 || key.length > 16) continue;
+        if (!CJK_PATTERN.test(key)) continue;
+
+        const entry = clauseMap.get(key);
+        if (entry) {
+          if (entry.last !== hymnIndex) {
+            entry.n++;
+            entry.last = hymnIndex;
+          }
+        } else {
+          clauseMap.set(key, { n: 1, last: hymnIndex });
+        }
+
+      }
+
+    }
+
+  });
+
+  suggestIndex = {
+    clauses: Array.from(clauseMap, ([key, v]) => [key, v.n]),
+    titles: Array.from(titleMap, ([key, v]) => [key, v.text, v.n])
+  };
+
+  return suggestIndex;
+
+}
+
+function getSuggestions(token) {
+
+  const q = normalizeSearchText(token);
+
+  if (!q || q.length > 10) return [];
+  if (/^\d+$/.test(q)) return [];
+  if (!CJK_PATTERN.test(q) && q.length < 2) return [];
+
+  const index = buildSuggestIndex();
+  const out = [];
+  const used = new Set();
+
+  /* 1. 歌名 */
+  const titleHits = [];
+  for (const [key, text, n] of index.titles) {
+    const pos = key.indexOf(q);
+    if (pos === -1) continue;
+    titleHits.push({ key, text, n, starts: pos === 0 });
+  }
+  titleHits.sort(
+    (a, b) =>
+      (b.starts - a.starts) ||
+      (b.n - a.n) ||
+      (a.key.length - b.key.length)
+  );
+  for (const hit of titleHits.slice(0, SUGGEST_MAX_TITLES)) {
+    out.push({ type: "title", label: "歌名", text: hit.text });
+    used.add(hit.key);
+  }
+
+  /* 2. 詞語：輸入文字 + 往後 1～3 字 */
+  if (q.length <= 3) {
+
+    const grams = new Map();
+
+    for (const [key, n] of index.clauses) {
+      let from = 0;
+      while (true) {
+        const i = key.indexOf(q, from);
+        if (i === -1) break;
+        for (let k = 1; k <= 3; k++) {
+          const end = i + q.length + k;
+          if (end > key.length) break;
+          const gram = key.slice(i, end);
+          if (gram.length < 2) continue;
+          grams.set(gram, (grams.get(gram) || 0) + n);
+        }
+        from = i + 1;
+      }
+    }
+
+    const minCount = q.length >= 2 ? 2 : 3;
+
+    // 若較長的詞出現次數與較短的差不多，只留較長者，避免「神的」「神的愛」重複。
+    // 結尾是「的、了、是…」這類虛字的片段不像詞語，先排除。
+    const list = Array.from(grams).filter(
+      ([gram, n]) => n >= minCount && !SUGGEST_STOP_END.includes(gram[gram.length - 1])
+    );
+    const byText = new Map(list);
+    const filtered = list.filter(([gram, n]) => {
+      for (const [other, m] of byText) {
+        if (other.length > gram.length && other.startsWith(gram) && m >= n * 0.8) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    filtered.sort((a, b) => b[1] - a[1] || a[0].length - b[0].length);
+
+    let added = 0;
+    for (const [gram] of filtered) {
+      if (added >= SUGGEST_MAX_WORDS) break;
+      if (gram === q || used.has(gram)) continue;
+      out.push({ type: "word", label: "詞語", text: gram });
+      used.add(gram);
+      added++;
+    }
+
+  }
+
+  /* 3. 短句：以輸入文字開頭者優先 */
+  const clauseHits = [];
+  for (const [key, n] of index.clauses) {
+    if (key.length < 3 || key === q || used.has(key)) continue;
+    const pos = key.indexOf(q);
+    if (pos === -1) continue;
+    clauseHits.push({ key, n, starts: pos === 0 });
+  }
+  clauseHits.sort(
+    (a, b) =>
+      (b.starts - a.starts) ||
+      (b.n - a.n) ||
+      (a.key.length - b.key.length)
+  );
+  for (const hit of clauseHits.slice(0, SUGGEST_MAX_CLAUSES)) {
+    out.push({ type: "clause", label: "短句", text: hit.key });
+  }
+
+  return out;
+
+}
+
+function getSuggestToken() {
+  // 以最後一個空白後的文字作為提示依據，其餘關鍵字保留。
+  const value = searchInput.value;
+  const match = value.match(/^(.*\s)?(\S*)$/);
+  return { head: (match && match[1]) || "", token: (match && match[2]) || "" };
+}
+
+function closeSearchSuggest() {
+  if (suggestTimer) {
+    clearTimeout(suggestTimer);
+    suggestTimer = null;
+  }
+  suggestItems = [];
+  suggestActive = -1;
+  if (suggestBox) {
+    suggestBox.innerHTML = "";
+    suggestBox.classList.add("hidden");
+  }
+  const section = searchInput && searchInput.closest(".search-section");
+  if (section) section.classList.remove("suggest-open");
+}
+
+function highlightSuggestRow() {
+  if (!suggestBox) return;
+  suggestBox.querySelectorAll(".search-suggest-item").forEach((el, i) => {
+    el.classList.toggle("active", i === suggestActive);
+    el.setAttribute("aria-selected", i === suggestActive ? "true" : "false");
+  });
+}
+
+function applySuggestion(item) {
+  const { head } = getSuggestToken();
+  searchInput.value = head + item.text;
+  closeSearchSuggest();
+  if (searchTimer) clearTimeout(searchTimer);
+  runSearch(searchInput.value);
+}
+
+function showAllResultsFromSuggest() {
+  closeSearchSuggest();
+  if (searchTimer) clearTimeout(searchTimer);
+  runSearch(searchInput.value);
+}
+
+function renderSearchSuggest() {
+
+  if (!suggestBox) return;
+
+  const { token } = getSuggestToken();
+  suggestToken = token;
+  suggestItems = getSuggestions(token);
+
+  if (suggestItems.length === 0) {
+    closeSearchSuggest();
+    return;
+  }
+
+  suggestBox.innerHTML = "";
+  suggestActive = -1;
+
+  // 第一列：直接查看目前輸入的全部搜尋結果。
+  const all = document.createElement("button");
+  all.type = "button";
+  all.className = "search-suggest-item search-suggest-all";
+  all.setAttribute("role", "option");
+  all.innerHTML = '<span class="search-suggest-tag">搜尋</span><span class="search-suggest-text"></span>';
+  all.querySelector(".search-suggest-text").textContent = `查看「${searchInput.value.trim()}」的全部結果`;
+  all.addEventListener("click", showAllResultsFromSuggest);
+  suggestBox.appendChild(all);
+
+  const q = normalizeSearchText(token);
+
+  for (const item of suggestItems) {
+
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "search-suggest-item";
+    row.setAttribute("role", "option");
+
+    const tag = document.createElement("span");
+    tag.className = "search-suggest-tag";
+    tag.textContent = item.label;
+
+    const text = document.createElement("span");
+    text.className = "search-suggest-text";
+
+    // 將輸入的文字標粗。
+    const lower = item.text.toLowerCase();
+    const pos = q ? lower.indexOf(q) : -1;
+    if (pos >= 0) {
+      text.appendChild(document.createTextNode(item.text.slice(0, pos)));
+      const strong = document.createElement("strong");
+      strong.textContent = item.text.slice(pos, pos + q.length);
+      text.appendChild(strong);
+      text.appendChild(document.createTextNode(item.text.slice(pos + q.length)));
+    } else {
+      text.textContent = item.text;
+    }
+
+    row.appendChild(tag);
+    row.appendChild(text);
+    row.addEventListener("click", () => applySuggestion(item));
+    suggestBox.appendChild(row);
+
+  }
+
+  suggestBox.classList.remove("hidden");
+  const section = searchInput.closest(".search-section");
+  if (section) section.classList.add("suggest-open");
+
+}
+
+function handleSuggestKey(event) {
+
+  // 回傳 true 代表已處理（呼叫端不再往下執行）。
+  if (!suggestBox || suggestBox.classList.contains("hidden")) return false;
+
+  const rows = suggestBox.querySelectorAll(".search-suggest-item");
+
+  if (event.key === "Escape") {
+    closeSearchSuggest();
+    return true;
+  }
+
+  if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    event.preventDefault();
+    const step = event.key === "ArrowDown" ? 1 : -1;
+    suggestActive = (suggestActive + 1 + step + rows.length + 1) % (rows.length + 1) - 1;
+    highlightSuggestRow();
+    return true;
+  }
+
+  if (event.key === "Enter" && suggestActive >= 0 && rows[suggestActive]) {
+    event.preventDefault();
+    rows[suggestActive].click();
+    return true;
+  }
+
+  return false;
+
+}
+
+function setupSearchSuggest() {
+
+  if (!searchInput || suggestBox) return;
+
+  suggestBox = document.createElement("div");
+  suggestBox.id = "searchSuggest";
+  suggestBox.className = "search-suggest hidden";
+  suggestBox.setAttribute("role", "listbox");
+  suggestBox.setAttribute("aria-label", "搜尋提示詞");
+
+  const box = searchInput.closest(".search-box");
+  if (box && box.parentNode) {
+    box.parentNode.insertBefore(suggestBox, box.nextSibling);
+  } else {
+    searchInput.parentNode.appendChild(suggestBox);
+  }
+
+  const schedule = () => {
+    if (suggestTimer) clearTimeout(suggestTimer);
+    suggestTimer = setTimeout(renderSearchSuggest, 60);
+  };
+
+  searchInput.addEventListener("input", event => {
+    if (event.isComposing) return;   // 注音／拼音組字中不提示
+    if (!searchInput.value.trim()) {
+      closeSearchSuggest();
+      return;
+    }
+    schedule();
+  });
+
+  searchInput.addEventListener("compositionend", () => {
+    if (searchInput.value.trim()) schedule();
+  });
+
+  searchInput.addEventListener("focus", () => {
+    // 第一次使用時在背景建立索引，之後輸入才不會卡頓。
+    buildSuggestIndex();
+    if (searchInput.value.trim() && suggestBox.classList.contains("hidden")) schedule();
+  });
+
+  // 點搜尋區以外的地方就收起提示。
+  document.addEventListener("pointerdown", event => {
+    if (!suggestBox || suggestBox.classList.contains("hidden")) return;
+    if (event.target.closest && event.target.closest(".search-section")) return;
+    closeSearchSuggest();
+  });
+
+  // 啟動後閒置時預先建立索引。
+  const warm = () => { try { buildSuggestIndex(); } catch (error) { /* 忽略 */ } };
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(warm, { timeout: 4000 });
+  } else {
+    setTimeout(warm, 2500);
   }
 
 }
