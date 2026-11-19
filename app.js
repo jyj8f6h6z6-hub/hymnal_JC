@@ -789,10 +789,10 @@ function applyBookMode() {
   if (searchInput) {
     searchInput.placeholder = otherMode
       ? "搜尋其他詩歌的歌名或歌詞"
-      : "不知道歌號？搜尋歌名或歌詞";
+      : "輸入歌號、歌名或歌詞搜尋";
     searchInput.setAttribute(
       "aria-label",
-      otherMode ? "搜尋其他詩歌的歌名或歌詞" : "不知道歌號時，搜尋歌名或歌詞"
+      otherMode ? "搜尋其他詩歌的歌名或歌詞" : "輸入歌號、歌名或歌詞搜尋"
     );
   }
 
