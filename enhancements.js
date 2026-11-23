@@ -880,6 +880,30 @@ const LYRICS_DOUBLE_HOLD_THRESHOLD = 9;
 const LYRICS_DOUBLE_HOLD_SENSITIVITY = 0.08;
 
 
+const LYRICS_FONT_KEY = "hymnalLyricsFont";
+let lyricsFontSaveTimer = null;
+
+function scheduleSaveLyricsFont(size) {
+  if (lyricsFontSaveTimer) clearTimeout(lyricsFontSaveTimer);
+  lyricsFontSaveTimer = setTimeout(() => {
+    try { localStorage.setItem(LYRICS_FONT_KEY, String(Math.round(size))); } catch (error) { /* 忽略 */ }
+  }, 300);
+}
+
+function clearSavedLyricsFont() {
+  if (lyricsFontSaveTimer) clearTimeout(lyricsFontSaveTimer);
+  try { localStorage.removeItem(LYRICS_FONT_KEY); } catch (error) { /* 忽略 */ }
+}
+
+function loadSavedLyricsFont() {
+  try {
+    const value = parseFloat(localStorage.getItem(LYRICS_FONT_KEY));
+    return value >= LYRICS_MIN_FONT && value <= LYRICS_MAX_FONT ? value : null;
+  } catch (error) {
+    return null;
+  }
+}
+
 function clampLyricsFont(value) {
 
   return Math.max(
@@ -939,6 +963,9 @@ function setLyricsFontSize(size) {
     `${safeSize}px`
   );
 
+  // v2.5.0：記住字級（手勢連續縮放時延遲寫入，避免頻繁存取）。
+  scheduleSaveLyricsFont(safeSize);
+
 }
 
 
@@ -961,6 +988,9 @@ function resetLyricsFontSize() {
   lyricsCurrentFont =
     lyricsDefaultFont;
 
+  // v2.5.0：還原預設時清除已記住的字級。
+  clearSavedLyricsFont();
+
 }
 
 
@@ -979,6 +1009,12 @@ function setupLyricsFontGestures() {
 
       lyricsCurrentFont =
         lyricsDefaultFont;
+
+      // v2.5.0：套用上次記住的字級。
+      const savedFont = loadSavedLyricsFont();
+      if (savedFont) {
+        setLyricsFontSize(savedFont);
+      }
 
     }
   );
@@ -2385,7 +2421,7 @@ function setupLyricsSwipeV13() {
 function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v2.4.0";
+  el.textContent="Hymnal JC · v2.5.0";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
@@ -2431,3 +2467,238 @@ function setupFeedbackV21(){
 }
 
 document.addEventListener("DOMContentLoaded",setupFeedbackV21);
+
+
+/* =========================================================
+   v2.5.0｜顯示設定面板（色塊、字級、行距）
+   - 頂端主題按鈕與歌詞標題列的「Aa」按鈕都開啟同一個面板
+   - 字級、行距會記住，每首歌都套用
+========================================================= */
+
+const LYRICS_LINE_MIN = 1.4;
+const LYRICS_LINE_MAX = 2.6;
+const LYRICS_LINE_DEFAULT = 1.9;
+const LYRICS_LINE_KEY = "hymnalLyricsLineHeight";
+
+let displayPanelEl = null;
+let displayBackdropEl = null;
+let displayFontSlider = null;
+let displayFontValue = null;
+let displayLineSlider = null;
+let displayLineValue = null;
+let displayButtonEl = null;
+
+function applyLyricsLineHeight(value) {
+  document.documentElement.style.setProperty("--lyrics-line-height", String(value));
+}
+
+function loadLyricsLineHeight() {
+  try {
+    const value = parseFloat(localStorage.getItem(LYRICS_LINE_KEY));
+    if (value >= LYRICS_LINE_MIN && value <= LYRICS_LINE_MAX) {
+      applyLyricsLineHeight(value);
+    }
+  } catch (error) { /* 忽略 */ }
+}
+
+function currentLyricsLineHeight() {
+  const value = parseFloat(
+    document.documentElement.style.getPropertyValue("--lyrics-line-height")
+  );
+  return value >= LYRICS_LINE_MIN && value <= LYRICS_LINE_MAX ? value : LYRICS_LINE_DEFAULT;
+}
+
+function refreshDisplayPanel() {
+  if (!displayPanelEl) return;
+
+  displayPanelEl.querySelectorAll(".display-swatch").forEach(button => {
+    button.setAttribute(
+      "aria-pressed",
+      button.dataset.themeId === THEMES[currentThemeIndex].id ? "true" : "false"
+    );
+  });
+
+  const font = Math.round(readCurrentLyricsFont());
+  displayFontSlider.value = String(font);
+  displayFontValue.textContent = `${font}`;
+
+  const line = currentLyricsLineHeight();
+  displayLineSlider.value = String(line);
+  displayLineValue.textContent = (Math.round(line * 100) / 100).toFixed(2);
+}
+
+function buildDisplayPanel() {
+  if (displayPanelEl) return;
+
+  displayBackdropEl = document.createElement("div");
+  displayBackdropEl.className = "display-panel-backdrop hidden";
+  displayBackdropEl.addEventListener("click", closeDisplayPanel);
+
+  displayPanelEl = document.createElement("div");
+  displayPanelEl.className = "display-panel hidden";
+  displayPanelEl.setAttribute("role", "dialog");
+  displayPanelEl.setAttribute("aria-label", "顯示設定");
+
+  const head = document.createElement("div");
+  head.className = "display-panel-head";
+  const title = document.createElement("div");
+  title.className = "display-panel-title";
+  title.textContent = "顯示設定";
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "display-panel-close";
+  close.setAttribute("aria-label", "關閉");
+  close.textContent = "×";
+  close.addEventListener("click", closeDisplayPanel);
+  head.append(title, close);
+  displayPanelEl.appendChild(head);
+
+  const groups = [
+    ["light", "淺色"],
+    ["dark", "深色"],
+    ["special", "特殊"]
+  ];
+
+  groups.forEach(([groupId, groupName]) => {
+    const label = document.createElement("div");
+    label.className = "display-group-label";
+    label.textContent = groupName;
+
+    const grid = document.createElement("div");
+    grid.className = "display-swatches";
+
+    THEMES.forEach((theme, index) => {
+      if (theme.group !== groupId) return;
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "display-swatch";
+      button.dataset.themeId = theme.id;
+      button.setAttribute("aria-pressed", "false");
+
+      const chip = document.createElement("span");
+      chip.className = "display-swatch-chip";
+      chip.style.background = theme.swatchBg;
+      chip.style.color = theme.swatchText;
+      chip.textContent = "字";
+
+      const name = document.createElement("span");
+      name.textContent = theme.name;
+
+      button.append(chip, name);
+      button.addEventListener("click", () => {
+        applyTheme(index);
+        refreshDisplayPanel();
+      });
+      grid.appendChild(button);
+    });
+
+    displayPanelEl.append(label, grid);
+  });
+
+  const makeSlider = (labelText, min, max, step, onInput) => {
+    const row = document.createElement("div");
+    row.className = "display-slider-row";
+    const lab = document.createElement("label");
+    lab.textContent = labelText;
+    const input = document.createElement("input");
+    input.type = "range";
+    input.min = String(min);
+    input.max = String(max);
+    input.step = String(step);
+    input.setAttribute("aria-label", labelText);
+    const value = document.createElement("div");
+    value.className = "display-slider-value";
+    input.addEventListener("input", () => onInput(parseFloat(input.value), value));
+    row.append(lab, input, value);
+    displayPanelEl.appendChild(row);
+    return { input, value };
+  };
+
+  const fontLabel = document.createElement("div");
+  fontLabel.className = "display-group-label";
+  fontLabel.textContent = "閱讀";
+  displayPanelEl.appendChild(fontLabel);
+
+  const fontSlider = makeSlider("字級", LYRICS_MIN_FONT, LYRICS_MAX_FONT, 1, (v, out) => {
+    setLyricsFontSize(v);
+    out.textContent = String(Math.round(v));
+  });
+  displayFontSlider = fontSlider.input;
+  displayFontValue = fontSlider.value;
+
+  const lineSlider = makeSlider("行距", LYRICS_LINE_MIN, LYRICS_LINE_MAX, 0.05, (v, out) => {
+    applyLyricsLineHeight(v);
+    out.textContent = (Math.round(v * 100) / 100).toFixed(2);
+    try { localStorage.setItem(LYRICS_LINE_KEY, String(v)); } catch (error) { /* 忽略 */ }
+  });
+  displayLineSlider = lineSlider.input;
+  displayLineValue = lineSlider.value;
+
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.className = "display-reset";
+  reset.textContent = "字級與行距恢復預設";
+  reset.addEventListener("click", () => {
+    resetLyricsFontSize();
+    document.documentElement.style.removeProperty("--lyrics-line-height");
+    try { localStorage.removeItem(LYRICS_LINE_KEY); } catch (error) { /* 忽略 */ }
+    refreshDisplayPanel();
+  });
+  displayPanelEl.appendChild(reset);
+
+  document.body.append(displayBackdropEl, displayPanelEl);
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && isDisplayPanelOpen()) closeDisplayPanel();
+  });
+}
+
+function isDisplayPanelOpen() {
+  return !!displayPanelEl && !displayPanelEl.classList.contains("hidden");
+}
+
+function openDisplayPanel() {
+  buildDisplayPanel();
+  refreshDisplayPanel();
+  displayBackdropEl.classList.remove("hidden");
+  displayPanelEl.classList.remove("hidden");
+  document.body.classList.add("display-panel-open");
+  if (displayButtonEl) displayButtonEl.setAttribute("aria-expanded", "true");
+}
+
+function closeDisplayPanel() {
+  if (!displayPanelEl) return;
+  displayBackdropEl.classList.add("hidden");
+  displayPanelEl.classList.add("hidden");
+  document.body.classList.remove("display-panel-open");
+  if (displayButtonEl) displayButtonEl.setAttribute("aria-expanded", "false");
+}
+
+function toggleDisplayPanel() {
+  if (isDisplayPanelOpen()) closeDisplayPanel();
+  else openDisplayPanel();
+}
+
+function setupDisplayPanelV250() {
+  loadLyricsLineHeight();
+
+  // 歌詞標題列：固定在上方，往下捲動時仍看得到。
+  const top = document.querySelector(".hymn-top");
+  if (top && !top.querySelector(".display-button")) {
+    displayButtonEl = document.createElement("button");
+    displayButtonEl.type = "button";
+    displayButtonEl.className = "display-button";
+    displayButtonEl.textContent = "Aa";
+    displayButtonEl.setAttribute("aria-label", "顯示設定");
+    displayButtonEl.setAttribute("aria-expanded", "false");
+    displayButtonEl.addEventListener("click", event => {
+      event.stopPropagation();
+      toggleDisplayPanel();
+    });
+    displayButtonEl.addEventListener("keydown", event => event.stopPropagation());
+    top.appendChild(displayButtonEl);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", setupDisplayPanelV250);

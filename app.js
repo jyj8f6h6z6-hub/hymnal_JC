@@ -134,38 +134,116 @@ function getCompactBookName(bookId) {
    主題
 ========================================================= */
 
+/*
+  v2.5.0：主題擴充為 13 種。
+  group：面板分組（light／dark／special）；
+  swatchBg、swatchText：面板色塊預覽用，需與 style.css 中該主題的 --card-bg、--text-main 一致。
+*/
 const THEMES = [
-
   {
     id: "default",
     name: "灰藍",
-    themeColor: "#f8fafc"
+    group: "light",
+    themeColor: "#f8fafc",
+    swatchBg: "#ffffff",
+    swatchText: "#172033"
   },
-
   {
     id: "paper",
     name: "米白",
-    themeColor: "#f8f4ec"
+    group: "light",
+    themeColor: "#f8f4ec",
+    swatchBg: "#fffdf8",
+    swatchText: "#40362c"
   },
-
   {
     id: "green",
     name: "護眼",
-    themeColor: "#e8f1e8"
+    group: "light",
+    themeColor: "#e8f1e8",
+    swatchBg: "#f5f8f4",
+    swatchText: "#33453a"
   },
-
   {
     id: "pink",
     name: "暖粉",
-    themeColor: "#f8e8ea"
+    group: "light",
+    themeColor: "#f8e8ea",
+    swatchBg: "#fff8f9",
+    swatchText: "#533b40"
   },
-
+  {
+    id: "lavender",
+    name: "薰衣草",
+    group: "light",
+    themeColor: "#eeeaf7",
+    swatchBg: "#f9f7fd",
+    swatchText: "#3b3552"
+  },
+  {
+    id: "sky",
+    name: "天藍",
+    group: "light",
+    themeColor: "#e6f0f8",
+    swatchBg: "#f6fafd",
+    swatchText: "#243b4d"
+  },
+  {
+    id: "cream",
+    name: "奶油黃",
+    group: "light",
+    themeColor: "#f7f0d2",
+    swatchBg: "#fffbea",
+    swatchText: "#4a3f1f"
+  },
   {
     id: "dark",
     name: "夜間",
-    themeColor: "#171b20"
+    group: "dark",
+    themeColor: "#171b20",
+    swatchBg: "#20262d",
+    swatchText: "#f2f5f7"
+  },
+  {
+    id: "midnight",
+    name: "深藍夜",
+    group: "dark",
+    themeColor: "#0d141f",
+    swatchBg: "#16202e",
+    swatchText: "#e6edf7"
+  },
+  {
+    id: "warm",
+    name: "暖黑",
+    group: "dark",
+    themeColor: "#171410",
+    swatchBg: "#231f1a",
+    swatchText: "#eadfce"
+  },
+  {
+    id: "black",
+    name: "純黑",
+    group: "dark",
+    themeColor: "#000000",
+    swatchBg: "#000000",
+    swatchText: "#d9d9d9"
+  },
+  {
+    id: "amber",
+    name: "琥珀暗室",
+    group: "special",
+    themeColor: "#120d04",
+    swatchBg: "#1c1408",
+    swatchText: "#f0c27a"
+  },
+  {
+    id: "contrast",
+    name: "黑底黃字",
+    group: "special",
+    themeColor: "#000000",
+    swatchBg: "#000000",
+    swatchText: "#ffe74a"
   }
-
 ];
 
 
@@ -629,20 +707,26 @@ function setupThemeButton() {
   }
 
 
+  /*
+    v2.5.0：頂端按鈕改為展開「顯示設定」面板（enhancements.js），
+    不再逐一切換主題。若面板尚未載入，退回原本的切換行為。
+  */
   themeButton.addEventListener(
     "click",
     () => {
 
+      if (typeof toggleDisplayPanel === "function") {
 
-      const nextTheme =
+        toggleDisplayPanel();
+        return;
+
+      }
+
+      applyTheme(
         (
           currentThemeIndex + 1
         ) %
-        THEMES.length;
-
-
-      applyTheme(
-        nextTheme
+        THEMES.length
       );
 
     }

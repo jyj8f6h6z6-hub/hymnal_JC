@@ -6,7 +6,7 @@
    4. 新版完整安裝後立即啟用，但不強制刷新畫面（v2.3.1）。
 */
 
-const CACHE_VERSION = "hymnal-offline-v2-20261119-v2.4.0";
+const CACHE_VERSION = "hymnal-offline-v2-20261123-v2.5.0";
 const CORE_CACHE = `${CACHE_VERSION}-core`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
