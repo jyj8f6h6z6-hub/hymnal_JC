@@ -2272,6 +2272,28 @@ body.other-songs-mode .number-section {
   box-shadow: 0 -10px 32px rgba(0, 0, 0, .16);
   transform: translate(-50%, 0);
   animation: display-panel-in 180ms ease-out;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+/* v2.5.1：半透明（不模糊），讓下方歌詞仍看得到。不支援 color-mix 的舊瀏覽器沿用上面的實心底色。 */
+.display-panel {
+  background: color-mix(in srgb, var(--card-bg) 72%, transparent);
+}
+
+.display-panel > * { transition: opacity 160ms ease; }
+
+/* 拖曳滑桿時：其餘部分幾乎透明，只留下正在調整的那一列。 */
+.display-panel.is-adjusting {
+  background: color-mix(in srgb, var(--card-bg) 6%, transparent);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.display-panel.is-adjusting > :not(.is-active) { opacity: .08; }
+
+@media (prefers-reduced-motion: reduce) {
+  .display-panel,
+  .display-panel > * { transition: none; }
 }
 
 .display-panel.hidden,
@@ -2377,6 +2399,12 @@ body.display-panel-open .app-version-badge { display: none; }
   align-items: center;
   gap: 10px;
   margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.display-slider-row.is-active {
+  background: color-mix(in srgb, var(--card-bg) 90%, transparent);
 }
 
 .display-slider-row label { font-size: 15px; font-weight: 800; }
@@ -2406,4 +2434,45 @@ body.display-panel-open .app-version-badge { display: none; }
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
+}
+
+
+/* =========================================================
+   v2.5.1｜標題列：Aa 不再多占一行
+   手機（直排）時，Aa 放在第一行右側，與「詩歌本・歌號」同列；
+   標題列維持兩行高，歌詞可讀區域不被壓縮。
+========================================================= */
+@media (max-width: 700px) {
+  .hymn-top {
+    padding-top: max(0.3rem, env(safe-area-inset-top)) !important;
+    padding-bottom: 0.35rem !important;
+    gap: 0 !important;
+  }
+
+  .hymn-top #hymnBook,
+  .hymn-top-preview .hymn-book {
+    display: flex !important;
+    align-items: center !important;
+    min-height: 36px;
+  }
+
+  .hymn-top .display-button {
+    position: absolute;
+    top: max(0.3rem, env(safe-area-inset-top));
+    right: 0;
+    margin: 0;
+    height: 36px;
+    min-height: 36px;
+  }
+
+  /* 其他詩歌沒有歌本列：Aa 與歌名同一橫列 */
+  .hymn-card.other-song-reading .hymn-top {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .hymn-card.other-song-reading .hymn-top .display-button {
+    position: static;
+  }
 }

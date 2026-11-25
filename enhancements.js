@@ -2421,7 +2421,7 @@ function setupLyricsSwipeV13() {
 function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v2.5.0";
+  el.textContent="Hymnal JC · v2.5.1";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
@@ -2475,7 +2475,7 @@ document.addEventListener("DOMContentLoaded",setupFeedbackV21);
    - 字級、行距會記住，每首歌都套用
 ========================================================= */
 
-const LYRICS_LINE_MIN = 1.4;
+const LYRICS_LINE_MIN = 1.0;
 const LYRICS_LINE_MAX = 2.6;
 const LYRICS_LINE_DEFAULT = 1.9;
 const LYRICS_LINE_KEY = "hymnalLyricsLineHeight";
@@ -2610,6 +2610,22 @@ function buildDisplayPanel() {
     const value = document.createElement("div");
     value.className = "display-slider-value";
     input.addEventListener("input", () => onInput(parseFloat(input.value), value));
+
+    // v2.5.1：拖曳時讓面板其餘部分淡出，只留下這一列，方便看到歌詞變化。
+    const startAdjust = () => {
+      displayPanelEl.classList.add("is-adjusting");
+      row.classList.add("is-active");
+    };
+    const endAdjust = () => {
+      displayPanelEl.classList.remove("is-adjusting");
+      row.classList.remove("is-active");
+    };
+    input.addEventListener("pointerdown", startAdjust);
+    input.addEventListener("touchstart", startAdjust, { passive: true });
+    ["pointerup", "pointercancel", "touchend", "touchcancel", "change", "blur"].forEach(name => {
+      input.addEventListener(name, endAdjust);
+    });
+
     row.append(lab, input, value);
     displayPanelEl.appendChild(row);
     return { input, value };
@@ -2671,6 +2687,8 @@ function closeDisplayPanel() {
   if (!displayPanelEl) return;
   displayBackdropEl.classList.add("hidden");
   displayPanelEl.classList.add("hidden");
+  displayPanelEl.classList.remove("is-adjusting");
+  displayPanelEl.querySelectorAll(".display-slider-row").forEach(r => r.classList.remove("is-active"));
   document.body.classList.remove("display-panel-open");
   if (displayButtonEl) displayButtonEl.setAttribute("aria-expanded", "false");
 }
