@@ -2421,7 +2421,7 @@ function setupLyricsSwipeV13() {
 function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v2.6.0";
+  el.textContent="Hymnal JC · v2.6.1";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{

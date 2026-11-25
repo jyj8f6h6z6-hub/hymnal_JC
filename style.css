@@ -2478,7 +2478,19 @@ body.display-panel-open .app-version-badge { display: none; }
 
 .pad-panel { display: none; }
 
-body.picker-pad .wheel-panel { display: none; }
+/*
+  數字模式不能用 display:none 隱藏滾輪：隱藏的元素捲動位置會歸零，
+  程式稍後讀滾輪時會讀到 9999，造成開歌後又跳成「找不到」。
+  改為保留在版面中、高度收為 0 且不可見，捲動位置才會保留。
+*/
+body.picker-pad .wheel-panel {
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
 
 body.picker-pad .pad-panel {
   display: grid;
