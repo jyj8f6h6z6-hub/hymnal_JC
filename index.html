@@ -46,6 +46,13 @@
 
     <section class="book-section" aria-label="選擇詩歌本">
       <div id="bookList" class="book-list"></div>
+
+      <div
+        id="padFloat"
+        class="pad-float hidden"
+        role="status"
+        aria-live="polite"
+      ></div>
     </section>
 
 
@@ -113,7 +120,29 @@
         </div>
       </div>
 
-      <div class="wheel-help">上下滑動數字選歌</div>
+      <div
+        id="padPanel"
+        class="pad-panel"
+        role="group"
+        aria-label="數字鍵盤"
+      >
+        <button type="button" class="pad-key" data-key="7">7</button>
+        <button type="button" class="pad-key" data-key="8">8</button>
+        <button type="button" class="pad-key" data-key="9">9</button>
+        <button type="button" class="pad-key" data-key="0">0</button>
+
+        <button type="button" class="pad-key" data-key="4">4</button>
+        <button type="button" class="pad-key" data-key="5">5</button>
+        <button type="button" class="pad-key" data-key="6">6</button>
+        <button type="button" class="pad-key pad-key-clear" data-key="clear" aria-label="清空">C</button>
+
+        <button type="button" class="pad-key" data-key="1">1</button>
+        <button type="button" class="pad-key" data-key="2">2</button>
+        <button type="button" class="pad-key" data-key="3">3</button>
+        <button type="button" class="pad-key pad-key-confirm" data-key="confirm" aria-label="確認">✓</button>
+      </div>
+
+      <div id="wheelHelp" class="wheel-help">上下滑動數字選歌</div>
     </section>
 
     <section class="search-section" aria-label="搜尋詩歌">

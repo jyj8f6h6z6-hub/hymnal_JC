@@ -2421,7 +2421,7 @@ function setupLyricsSwipeV13() {
 function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v2.5.2";
+  el.textContent="Hymnal JC · v2.6.0";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
@@ -2511,6 +2511,10 @@ function currentLyricsLineHeight() {
 function refreshDisplayPanel() {
   if (!displayPanelEl) return;
 
+  displayPanelEl.querySelectorAll(".display-mode-btn").forEach(btn => {
+    btn.setAttribute("aria-pressed", btn.dataset.mode === pickerMode ? "true" : "false");
+  });
+
   displayPanelEl.querySelectorAll(".display-swatch").forEach(button => {
     button.setAttribute(
       "aria-pressed",
@@ -2552,6 +2556,28 @@ function buildDisplayPanel() {
   close.addEventListener("click", closeDisplayPanel);
   head.append(title, close);
   displayPanelEl.appendChild(head);
+
+  // v2.6.0：選歌方式（滾輪／數字）
+  const modeRow = document.createElement("div");
+  modeRow.className = "display-mode-row";
+  const modeLabel = document.createElement("span");
+  modeLabel.textContent = "選歌方式";
+  const modeSwitch = document.createElement("div");
+  modeSwitch.className = "display-mode-switch";
+  [["wheel", "滾輪"], ["pad", "數字"]].forEach(([mode, text]) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "display-mode-btn";
+    btn.dataset.mode = mode;
+    btn.textContent = text;
+    btn.addEventListener("click", () => {
+      setPickerMode(mode);
+      refreshDisplayPanel();
+    });
+    modeSwitch.appendChild(btn);
+  });
+  modeRow.append(modeLabel, modeSwitch);
+  displayPanelEl.appendChild(modeRow);
 
   const groups = [
     ["light", "淺色"],
@@ -2720,3 +2746,121 @@ function setupDisplayPanelV250() {
 }
 
 document.addEventListener("DOMContentLoaded", setupDisplayPanelV250);
+
+
+/* =========================================================
+   v2.6.0｜數字鍵盤選歌
+   鍵盤：7 8 9 0 ／ 4 5 6 C ／ 1 2 3 ✓
+   - 輸入的數字顯示在歌本區中央的浮動視窗（最多 4 位，開頭的 0 忽略）
+   - C：全部清空並收起視窗
+   - ✓：開啟目前歌本的該首；不存在時數字變警示色，不清空
+   - 點鍵盤以外的地方、切換歌本、切換選歌方式：清空並收起
+========================================================= */
+
+const PICKER_MODE_KEY = "hymnalPickerMode";
+const PAD_MAX_DIGITS = 4;
+
+let pickerMode = "wheel";
+let padDigits = "";
+let padFloatEl = null;
+let padPanelEl = null;
+let padHelpEl = null;
+let wheelHelpText = "";
+
+function renderPadFloat() {
+  if (!padFloatEl) return;
+  padFloatEl.classList.remove("is-invalid");
+  if (padDigits) {
+    padFloatEl.textContent = padDigits;
+    padFloatEl.classList.remove("hidden");
+    // 浮動視窗高度為歌本區的 1/3，數字大小隨視窗高度調整，避免太小或被裁切。
+    const height = padFloatEl.offsetHeight;
+    if (height) {
+      padFloatEl.style.fontSize = `${Math.max(18, Math.min(52, Math.round(height * 0.46)))}px`;
+    }
+  } else {
+    padFloatEl.textContent = "";
+    padFloatEl.classList.add("hidden");
+  }
+}
+
+function clearPad() {
+  padDigits = "";
+  renderPadFloat();
+}
+
+function padPress(key) {
+  if (key === "clear") {
+    clearPad();
+    return;
+  }
+
+  if (key === "confirm") {
+    if (!padDigits) return;
+    const hymn = findHymn(selectedBook, Number(padDigits));
+    if (!hymn) {
+      // 不存在：警示色、不開歌、不清空（重新觸發抖動動畫）
+      padFloatEl.classList.remove("is-invalid");
+      void padFloatEl.offsetWidth;
+      padFloatEl.classList.add("is-invalid");
+      return;
+    }
+    openSearchResult(hymn);
+    clearPad();
+    return;
+  }
+
+  // 數字鍵
+  if (padDigits.length >= PAD_MAX_DIGITS) return;
+  if (padDigits === "" && key === "0") return;
+  padDigits += key;
+  renderPadFloat();
+}
+
+function setPickerMode(mode) {
+  pickerMode = mode === "pad" ? "pad" : "wheel";
+  document.body.classList.toggle("picker-pad", pickerMode === "pad");
+  clearPad();
+
+  if (padHelpEl) {
+    padHelpEl.textContent = pickerMode === "pad" ? "輸入歌號後按 ✓ 開啟" : wheelHelpText;
+  }
+
+  try { localStorage.setItem(PICKER_MODE_KEY, pickerMode); } catch (error) { /* 忽略 */ }
+}
+
+function setupNumberPadV260() {
+  padFloatEl = document.getElementById("padFloat");
+  padPanelEl = document.getElementById("padPanel");
+  padHelpEl = document.getElementById("wheelHelp");
+  if (!padFloatEl || !padPanelEl) return;
+
+  wheelHelpText = padHelpEl ? padHelpEl.textContent : "";
+
+  padPanelEl.addEventListener("click", event => {
+    const key = event.target.closest && event.target.closest(".pad-key");
+    if (key) padPress(key.dataset.key);
+  });
+
+  // 點鍵盤以外的任何地方（含浮動視窗本身）：清空並收起。
+  document.addEventListener("pointerdown", event => {
+    if (!padDigits) return;
+    if (event.target.closest && event.target.closest("#padPanel")) return;
+    clearPad();
+  });
+
+  // 切換歌本時清空，因為原本輸入的歌號不再適用。
+  if (typeof selectBook === "function") {
+    const originalSelectBook = selectBook;
+    selectBook = function () {
+      clearPad();
+      return originalSelectBook.apply(this, arguments);
+    };
+  }
+
+  let saved = "wheel";
+  try { saved = localStorage.getItem(PICKER_MODE_KEY) || "wheel"; } catch (error) { /* 忽略 */ }
+  setPickerMode(saved);
+}
+
+document.addEventListener("DOMContentLoaded", setupNumberPadV260);

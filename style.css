@@ -2260,7 +2260,7 @@ body.other-songs-mode .number-section {
   z-index: 9500;
   width: 100%;
   max-width: 560px;
-  max-height: 72vh;
+  max-height: 80vh;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
@@ -2466,4 +2466,149 @@ body.display-panel-open .app-version-badge { display: none; }
   .hymn-card.other-song-reading .hymn-top .display-button {
     position: static;
   }
+}
+
+
+/* =========================================================
+   v2.6.0｜數字鍵盤模式
+   - 與滾輪共用同一個框（高度、邊界、圓角不變）
+   - 輸入的數字顯示在歌本區中央的浮動視窗
+========================================================= */
+.book-section { position: relative; }
+
+.pad-panel { display: none; }
+
+body.picker-pad .wheel-panel { display: none; }
+
+body.picker-pad .pad-panel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 4px;
+  height: 222px;
+  max-width: 520px;
+  margin: 2px auto 0;
+  padding: 6px 4px;
+}
+
+.pad-key {
+  appearance: none;
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--button-bg);
+  color: var(--text-main);
+  font: inherit;
+  font-size: clamp(26px, 7vw, 34px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pad-key:active {
+  background: var(--button-active-bg);
+  transform: scale(.97);
+}
+
+.pad-key-clear {
+  color: var(--text-muted);
+  font-size: clamp(24px, 6vw, 30px);
+}
+
+.pad-key-confirm {
+  border-color: transparent;
+  background: var(--strong-bg);
+  color: var(--strong-text);
+}
+
+.pad-key-confirm:active { background: var(--strong-bg); opacity: .85; }
+
+.pad-float {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 30;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(60%, 200px);
+  height: 33.333%;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--card-bg);
+  color: var(--text-main);
+  box-shadow: var(--shadow);
+  font-size: 24px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 3px;
+  line-height: 1;
+}
+
+.pad-float.hidden { display: none; }
+
+.pad-float.is-invalid {
+  color: var(--pad-warn, #d93025);
+  animation: pad-shake 300ms ease;
+}
+
+body[data-theme="dark"],
+body[data-theme="midnight"],
+body[data-theme="warm"],
+body[data-theme="black"],
+body[data-theme="amber"],
+body[data-theme="contrast"] { --pad-warn: #ff6b5e; }
+
+@keyframes pad-shake {
+  0%, 100% { transform: translate(-50%, -50%); }
+  25% { transform: translate(calc(-50% - 6px), -50%); }
+  75% { transform: translate(calc(-50% + 6px), -50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pad-float.is-invalid { animation: none; }
+}
+
+/* 顯示設定面板：選歌方式 */
+.display-mode-row {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.display-mode-row > span { font-size: 15px; font-weight: 800; }
+
+.display-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--soft-bg);
+}
+
+.display-mode-btn {
+  min-height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.display-mode-btn[aria-pressed="true"] {
+  background: var(--strong-bg);
+  color: var(--strong-text);
 }
