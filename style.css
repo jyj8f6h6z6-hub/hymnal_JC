@@ -2275,16 +2275,11 @@ body.other-songs-mode .number-section {
   transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-/* v2.5.1：半透明（不模糊），讓下方歌詞仍看得到。不支援 color-mix 的舊瀏覽器沿用上面的實心底色。 */
-.display-panel {
-  background: color-mix(in srgb, var(--card-bg) 72%, transparent);
-}
-
 .display-panel > * { transition: opacity 160ms ease; }
 
-/* 拖曳滑桿時：其餘部分幾乎透明，只留下正在調整的那一列。 */
+/* v2.5.2：平常為實心；只有拖曳滑桿時，其餘部分才透明，只留下正在調整的那一列（不加底色）。 */
 .display-panel.is-adjusting {
-  background: color-mix(in srgb, var(--card-bg) 6%, transparent);
+  background: transparent;
   border-color: transparent;
   box-shadow: none;
 }
@@ -2401,10 +2396,6 @@ body.display-panel-open .app-version-badge { display: none; }
   margin-top: 4px;
   padding: 2px 6px;
   border-radius: 12px;
-}
-
-.display-slider-row.is-active {
-  background: color-mix(in srgb, var(--card-bg) 90%, transparent);
 }
 
 .display-slider-row label { font-size: 15px; font-weight: 800; }
