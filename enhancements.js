@@ -2421,7 +2421,7 @@ function setupLyricsSwipeV13() {
 function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v2.6.1";
+  el.textContent="Hymnal JC · v2.7.0";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
@@ -2864,3 +2864,111 @@ function setupNumberPadV260() {
 }
 
 document.addEventListener("DOMContentLoaded", setupNumberPadV260);
+
+
+/* =========================================================
+   v2.7.0｜數字鍵模式的閱讀頁
+   - 只在「數字」選歌方式下啟用；滾輪模式完全不變。
+   - 選歌（✓、搜尋結果）後，詩歌卡片變成全螢幕、只有歌詞的閱讀頁。
+   - 左上 ∨ 或手機返回手勢收回首頁，首頁狀態保留。
+========================================================= */
+
+const READER_CLOSE_MS = 220;
+let readerOpen = false;
+let readerClosingTimer = null;
+let readerCloseButtonEl = null;
+
+function openReader() {
+  if (pickerMode !== "pad") return;
+  if (readerClosingTimer) {
+    clearTimeout(readerClosingTimer);
+    readerClosingTimer = null;
+    document.body.classList.remove("reader-closing");
+  }
+  if (!readerOpen) {
+    readerOpen = true;
+    document.body.classList.add("reader-open");
+    try { history.pushState({ hymnalReader: true }, ""); } catch (error) { /* 忽略 */ }
+  }
+  if (hymnCard) hymnCard.scrollTop = 0;
+}
+
+function closeReader(options) {
+  if (!readerOpen) return;
+  readerOpen = false;
+  const instant = options && options.instant;
+  const fromPop = options && options.fromPop;
+
+  // 以按鈕收回時，同步移除多出來的歷史紀錄；返回手勢則已經由瀏覽器處理。
+  if (!fromPop) {
+    try {
+      if (history.state && history.state.hymnalReader) history.back();
+    } catch (error) { /* 忽略 */ }
+  }
+
+  if (instant) {
+    document.body.classList.remove("reader-open", "reader-closing");
+    return;
+  }
+
+  document.body.classList.add("reader-closing");
+  readerClosingTimer = setTimeout(() => {
+    readerClosingTimer = null;
+    document.body.classList.remove("reader-open", "reader-closing");
+  }, READER_CLOSE_MS);
+}
+
+function setupReaderV270() {
+  const top = document.querySelector(".hymn-top");
+  if (top && !top.querySelector(".reader-close")) {
+    readerCloseButtonEl = document.createElement("button");
+    readerCloseButtonEl.type = "button";
+    readerCloseButtonEl.className = "reader-close";
+    readerCloseButtonEl.setAttribute("aria-label", "收回，回到首頁");
+    readerCloseButtonEl.title = "收回";
+    readerCloseButtonEl.innerHTML =
+      '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    // 點 ∨ 不要觸發標題列「回到歌詞開頭」的點擊。
+    readerCloseButtonEl.addEventListener("click", event => {
+      event.stopPropagation();
+      closeReader();
+    });
+    top.insertBefore(readerCloseButtonEl, top.firstChild);
+  }
+
+  // 返回手勢／瀏覽器返回：先收回閱讀頁，而不是離開 App。
+  window.addEventListener("popstate", () => {
+    if (readerOpen) closeReader({ fromPop: true });
+  });
+
+  // 選歌入口：數字模式下開啟閱讀頁，滾輪模式維持原行為。
+  if (typeof openSearchResult === "function") {
+    const originalOpenSearchResult = openSearchResult;
+    openSearchResult = function (hymn) {
+      const result = originalOpenSearchResult.apply(this, arguments);
+      if (hymn && pickerMode === "pad") openReader();
+      return result;
+    };
+  }
+
+  // 數字模式下滾輪是隱藏的，只會被程式設定位置；
+  // 不讓滾輪捲動中途的數值覆蓋閱讀頁，避免開歌時先閃出別首再換回來。
+  if (typeof updateHymn === "function") {
+    const originalUpdateHymn = updateHymn;
+    updateHymn = function () {
+      if (pickerMode === "pad") return;
+      return originalUpdateHymn.apply(this, arguments);
+    };
+  }
+
+  // 切回滾輪模式時，立即收起閱讀頁。
+  if (typeof setPickerMode === "function") {
+    const originalSetPickerMode = setPickerMode;
+    setPickerMode = function (mode) {
+      if (mode !== "pad") closeReader({ instant: true });
+      return originalSetPickerMode.apply(this, arguments);
+    };
+  }
+}
+
+document.addEventListener("DOMContentLoaded", setupReaderV270);

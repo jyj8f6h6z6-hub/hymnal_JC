@@ -2624,3 +2624,141 @@ body[data-theme="contrast"] { --pad-warn: #ff6b5e; }
   background: var(--strong-bg);
   color: var(--strong-text);
 }
+
+
+/* =========================================================
+   v2.7.0｜數字鍵模式的閱讀頁
+   只套用在 body.picker-pad；滾輪模式不受影響。
+========================================================= */
+.reader-close { display: none; }
+
+/* 首頁只負責選歌：不顯示歌詞卡片、空白提示、找不到提示 */
+body.picker-pad:not(.reader-open) #hymnCard,
+body.picker-pad #emptyState,
+body.picker-pad #notFound {
+  display: none !important;
+}
+
+body.picker-pad .hymn-area {
+  margin-top: 0;
+  padding-bottom: 0;
+}
+
+/* 閱讀頁：全螢幕、只有歌詞 */
+body.picker-pad.reader-open {
+  overflow: hidden;
+}
+
+body.picker-pad.reader-open #hymnCard {
+  position: fixed !important;
+  inset: 0;
+  z-index: 9000;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+  padding: 0 clamp(14px, 4vw, 28px) max(28px, env(safe-area-inset-bottom));
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--card-bg);
+  overflow-x: clip;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  animation: readerUp 240ms cubic-bezier(.22,.72,.24,1);
+}
+
+body.picker-pad.reader-open.reader-closing #hymnCard {
+  animation: readerDown 220ms cubic-bezier(.4,0,.8,.4) forwards;
+}
+
+@keyframes readerUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes readerDown {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+body.picker-pad.reader-open .app-version-badge { display: none; }
+
+/* 頂端列：左 ∨、中間歌本與歌名、右 Aa */
+body.picker-pad .hymn-top {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  text-align: center;
+  padding-top: max(0.3rem, env(safe-area-inset-top)) !important;
+  padding-bottom: 0.35rem !important;
+}
+
+body.picker-pad .hymn-top #hymnBook,
+body.picker-pad .hymn-top-preview .hymn-book {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 36px;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+body.picker-pad .hymn-top-preview .hymn-meta { display: block; }
+
+body.picker-pad .hymn-top #hymnTitle,
+body.picker-pad .hymn-top-preview .hymn-title {
+  text-align: center;
+}
+
+body.picker-pad .hymn-top .display-button {
+  position: absolute;
+  top: max(0.3rem, env(safe-area-inset-top));
+  right: 0;
+  margin: 0;
+  height: 36px;
+  min-height: 36px;
+}
+
+body.picker-pad .hymn-top .reader-close {
+  position: absolute;
+  top: max(0.3rem, env(safe-area-inset-top));
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--button-bg);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+body.picker-pad .hymn-top .reader-close:active { transform: scale(.96); }
+
+/* 其他詩歌（沒有歌本列）：∨、歌名、Aa 同一橫列 */
+body.picker-pad .hymn-card.other-song-reading .hymn-top {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+body.picker-pad .hymn-card.other-song-reading .hymn-top .reader-close,
+body.picker-pad .hymn-card.other-song-reading .hymn-top .display-button {
+  position: static;
+  flex: 0 0 auto;
+}
+
+body.picker-pad .hymn-card.other-song-reading #hymnTitle {
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.picker-pad.reader-open #hymnCard,
+  body.picker-pad.reader-open.reader-closing #hymnCard { animation: none; }
+}
