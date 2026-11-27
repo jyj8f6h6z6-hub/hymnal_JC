@@ -2421,7 +2421,7 @@ function setupLyricsSwipeV13() {
 function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v2.7.1";
+  el.textContent="Hymnal JC · v2.7.2";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
@@ -2733,7 +2733,7 @@ function setupDisplayPanelV250() {
     displayButtonEl = document.createElement("button");
     displayButtonEl.type = "button";
     displayButtonEl.className = "display-button";
-    displayButtonEl.innerHTML = '<svg class="icon-aa" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M2.5 18 7.5 6.5 12.5 18M4.4 14h6.2"/><circle cx="17.3" cy="14.7" r="2.6"/><path d="M19.9 12.1V18"/></svg>';
+    displayButtonEl.innerHTML = '<svg class="icon-gear" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37 1 .608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>';
     displayButtonEl.setAttribute("aria-label", "顯示設定");
     displayButtonEl.setAttribute("aria-expanded", "false");
     displayButtonEl.addEventListener("click", event => {

@@ -2769,7 +2769,7 @@ body.picker-pad .hymn-card.other-song-reading #hymnTitle {
    - 「Aa」與對話氣泡皆為 SVG 線條圖示，粗細一致、隨色塊配色
    - 首頁兩顆按鈕同為 44px 圓形；歌詞頁維持 36px 高
 ========================================================= */
-.icon-aa,
+.icon-gear,
 .icon-msg {
   display: block;
   flex: none;
@@ -2798,7 +2798,7 @@ body.picker-pad .hymn-card.other-song-reading #hymnTitle {
   justify-content: center;
 }
 
-.hymn-top .display-button .icon-aa {
+.hymn-top .display-button .icon-gear {
   width: 24px;
   height: 24px;
 }
