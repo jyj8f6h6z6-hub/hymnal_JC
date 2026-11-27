@@ -1871,11 +1871,58 @@ function showHymn(
   requestAnimationFrame(
     () => {
 
-      hymnLyrics.textContent =
-        lyrics;
+      renderLyrics(hymnLyrics, lyrics);
 
     }
   );
+
+}
+
+
+
+/* =========================================================
+   v2.8.0｜歌詞分段顯示
+   資料（hymns.js）不變，仍以空白行分節；
+   顯示時才依空白行切成一段一段，段與段的間距由「段距」控制。
+========================================================= */
+
+function renderLyrics(element, text) {
+
+  if (!element) {
+    return;
+  }
+
+  const blocks =
+    String(text || "")
+      .replace(/\r\n/g, "\n")
+      .split(/\n[ \t\u3000]*\n+/)
+      .map(block => block.replace(/^\n+|\n+$/g, ""))
+      .filter(block => block.length > 0);
+
+  const fragment =
+    document.createDocumentFragment();
+
+  blocks.forEach(
+    block => {
+
+      const paragraph =
+        document.createElement("div");
+
+      paragraph.className =
+        "lyrics-para";
+
+      paragraph.textContent =
+        block;
+
+      fragment.appendChild(
+        paragraph
+      );
+
+    }
+  );
+
+  element.textContent = "";
+  element.appendChild(fragment);
 
 }
 

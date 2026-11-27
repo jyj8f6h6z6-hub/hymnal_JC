@@ -2300,7 +2300,7 @@ function setupLyricsSwipeV13() {
 
     const lyrics=document.createElement("div");
     lyrics.className="hymn-lyrics hymn-lyrics-preview";
-    lyrics.textContent=cleanLyrics(h);
+    renderLyrics(lyrics,cleanLyrics(h));
     const fs=hymnLyrics.style.getPropertyValue("--lyrics-font-size");
     if(fs) lyrics.style.setProperty("--lyrics-font-size",fs);
 
@@ -2421,7 +2421,7 @@ function setupLyricsSwipeV13() {
 function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v2.7.2";
+  el.textContent="Hymnal JC · v2.8.0";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
@@ -2480,6 +2480,41 @@ const LYRICS_LINE_MAX = 2.6;
 const LYRICS_LINE_DEFAULT = 1.9;
 const LYRICS_LINE_KEY = "hymnalLyricsLineHeight";
 
+// v2.8.0：字距、段距
+const LYRICS_SPACING_KEY = "hymnalLyricsSpacing";
+const LYRICS_SPACING_MAX_EM = 0.035;   // 現有字距即為上限；滑桿只能縮小
+const LYRICS_GAP_KEY = "hymnalLyricsParaGap";
+const LYRICS_GAP_MIN = 0;
+const LYRICS_GAP_MAX = 2;
+let lyricsSpacingRatio = 1;
+let lyricsParaGap = 1;
+let displaySpacingSlider = null;
+let displaySpacingValue = null;
+let displayGapSlider = null;
+let displayGapValue = null;
+
+function applyLyricsSpacing(ratio) {
+  lyricsSpacingRatio = ratio;
+  document.documentElement.style.setProperty(
+    "--lyrics-letter-spacing",
+    `${(ratio * LYRICS_SPACING_MAX_EM).toFixed(4)}em`
+  );
+}
+
+function applyLyricsParaGap(value) {
+  lyricsParaGap = value;
+  document.documentElement.style.setProperty("--lyrics-para-gap", String(value));
+}
+
+function loadLyricsSpacingAndGap() {
+  try {
+    const ratio = parseFloat(localStorage.getItem(LYRICS_SPACING_KEY));
+    if (ratio >= 0 && ratio <= 1) applyLyricsSpacing(ratio);
+    const gap = parseFloat(localStorage.getItem(LYRICS_GAP_KEY));
+    if (gap >= LYRICS_GAP_MIN && gap <= LYRICS_GAP_MAX) applyLyricsParaGap(gap);
+  } catch (error) { /* 忽略 */ }
+}
+
 let displayPanelEl = null;
 let displayBackdropEl = null;
 let displayFontSlider = null;
@@ -2529,6 +2564,15 @@ function refreshDisplayPanel() {
   const line = currentLyricsLineHeight();
   displayLineSlider.value = String(line);
   displayLineValue.textContent = (Math.round(line * 100) / 100).toFixed(2);
+
+  if (displaySpacingSlider) {
+    displaySpacingSlider.value = String(lyricsSpacingRatio);
+    displaySpacingValue.textContent = `${Math.round(lyricsSpacingRatio * 100)}%`;
+  }
+  if (displayGapSlider) {
+    displayGapSlider.value = String(lyricsParaGap);
+    displayGapValue.textContent = lyricsParaGap.toFixed(1);
+  }
 }
 
 function buildDisplayPanel() {
@@ -2677,14 +2721,38 @@ function buildDisplayPanel() {
   displayLineSlider = lineSlider.input;
   displayLineValue = lineSlider.value;
 
+  const spacingSlider = makeSlider("字距", 0, 1, 0.05, (v, out) => {
+    applyLyricsSpacing(v);
+    out.textContent = `${Math.round(v * 100)}%`;
+    try { localStorage.setItem(LYRICS_SPACING_KEY, String(v)); } catch (error) { /* 忽略 */ }
+  });
+  displaySpacingSlider = spacingSlider.input;
+  displaySpacingValue = spacingSlider.value;
+
+  const gapSlider = makeSlider("段距", LYRICS_GAP_MIN, LYRICS_GAP_MAX, 0.1, (v, out) => {
+    applyLyricsParaGap(v);
+    out.textContent = v.toFixed(1);
+    try { localStorage.setItem(LYRICS_GAP_KEY, String(v)); } catch (error) { /* 忽略 */ }
+  });
+  displayGapSlider = gapSlider.input;
+  displayGapValue = gapSlider.value;
+
   const reset = document.createElement("button");
   reset.type = "button";
   reset.className = "display-reset";
-  reset.textContent = "字級與行距恢復預設";
+  reset.textContent = "閱讀設定恢復預設";
   reset.addEventListener("click", () => {
     resetLyricsFontSize();
     document.documentElement.style.removeProperty("--lyrics-line-height");
-    try { localStorage.removeItem(LYRICS_LINE_KEY); } catch (error) { /* 忽略 */ }
+    document.documentElement.style.removeProperty("--lyrics-letter-spacing");
+    document.documentElement.style.removeProperty("--lyrics-para-gap");
+    lyricsSpacingRatio = 1;
+    lyricsParaGap = 1;
+    try {
+      localStorage.removeItem(LYRICS_LINE_KEY);
+      localStorage.removeItem(LYRICS_SPACING_KEY);
+      localStorage.removeItem(LYRICS_GAP_KEY);
+    } catch (error) { /* 忽略 */ }
     refreshDisplayPanel();
   });
   displayPanelEl.appendChild(reset);
@@ -2726,6 +2794,7 @@ function toggleDisplayPanel() {
 
 function setupDisplayPanelV250() {
   loadLyricsLineHeight();
+  loadLyricsSpacingAndGap();
 
   // 歌詞標題列：固定在上方，往下捲動時仍看得到。
   const top = document.querySelector(".hymn-top");

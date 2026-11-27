@@ -871,7 +871,7 @@ button, input { font-family: inherit; }
   font-size: clamp(22px, 4vw, 30px);
   font-weight: 500;
   line-height: var(--lyrics-line-height, 1.9);
-  letter-spacing: .035em;
+  letter-spacing: var(--lyrics-letter-spacing, .035em);
 }
 
 /* 空白 / 找不到 */
@@ -2801,4 +2801,18 @@ body.picker-pad .hymn-card.other-song-reading #hymnTitle {
 .hymn-top .display-button .icon-gear {
   width: 24px;
   height: 24px;
+}
+
+
+/* =========================================================
+   v2.8.0｜歌詞分段與段距
+   段與段的間距 = 行高 × 段距倍數（預設 1 倍，等同原本的一個空白行）。
+========================================================= */
+.hymn-lyrics .lyrics-para {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.hymn-lyrics .lyrics-para + .lyrics-para {
+  margin-top: calc(var(--lyrics-line-height, 1.9) * var(--lyrics-para-gap, 1) * 1em);
 }
