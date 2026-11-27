@@ -2762,3 +2762,43 @@ body.picker-pad .hymn-card.other-song-reading #hymnTitle {
   body.picker-pad.reader-open #hymnCard,
   body.picker-pad.reader-open.reader-closing #hymnCard { animation: none; }
 }
+
+
+/* =========================================================
+   v2.7.1｜首頁與歌詞頁的圖示統一
+   - 「Aa」與對話氣泡皆為 SVG 線條圖示，粗細一致、隨色塊配色
+   - 首頁兩顆按鈕同為 44px 圓形；歌詞頁維持 36px 高
+========================================================= */
+.icon-aa,
+.icon-msg {
+  display: block;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.header-actions .feedback-button,
+.header-actions .theme-button {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  gap: 0;
+  border-radius: 50%;
+}
+
+.header-actions .feedback-label { display: none; }
+
+.hymn-top .display-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hymn-top .display-button .icon-aa {
+  width: 24px;
+  height: 24px;
+}

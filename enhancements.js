@@ -2421,7 +2421,7 @@ function setupLyricsSwipeV13() {
 function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v2.7.0";
+  el.textContent="Hymnal JC · v2.7.1";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
@@ -2733,7 +2733,7 @@ function setupDisplayPanelV250() {
     displayButtonEl = document.createElement("button");
     displayButtonEl.type = "button";
     displayButtonEl.className = "display-button";
-    displayButtonEl.textContent = "Aa";
+    displayButtonEl.innerHTML = '<svg class="icon-aa" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M2.5 18 7.5 6.5 12.5 18M4.4 14h6.2"/><circle cx="17.3" cy="14.7" r="2.6"/><path d="M19.9 12.1V18"/></svg>';
     displayButtonEl.setAttribute("aria-label", "顯示設定");
     displayButtonEl.setAttribute("aria-expanded", "false");
     displayButtonEl.addEventListener("click", event => {
@@ -2927,7 +2927,7 @@ function setupReaderV270() {
     readerCloseButtonEl.setAttribute("aria-label", "收回，回到首頁");
     readerCloseButtonEl.title = "收回";
     readerCloseButtonEl.innerHTML =
-      '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     // 點 ∨ 不要觸發標題列「回到歌詞開頭」的點擊。
     readerCloseButtonEl.addEventListener("click", event => {
       event.stopPropagation();
