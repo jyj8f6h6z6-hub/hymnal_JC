@@ -2421,7 +2421,7 @@ function setupLyricsSwipeV13() {
 function setupAppVersionV20(){
   let el=document.getElementById("appVersionBadge");
   if(!el){el=document.createElement("div");el.id="appVersionBadge";el.className="app-version-badge";document.body.appendChild(el);}
-  el.textContent="Hymnal JC · v2.8.0";
+  el.textContent="Hymnal JC · v2.8.1";
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
@@ -2481,24 +2481,30 @@ const LYRICS_LINE_DEFAULT = 1.9;
 const LYRICS_LINE_KEY = "hymnalLyricsLineHeight";
 
 // v2.8.0：字距、段距
-const LYRICS_SPACING_KEY = "hymnalLyricsSpacing";
-const LYRICS_SPACING_MAX_EM = 0.035;   // 現有字距即為上限；滑桿只能縮小
+const LYRICS_SPACING_KEY = "hymnalLyricsSpacingEm";   // 單位：百分之一字寬
+const LYRICS_SPACING_OLD_KEY = "hymnalLyricsSpacing";  // v2.8.0 的舊紀錄（已作廢）
+const LYRICS_SPACING_DEFAULT = 3.5;   // 現有字距（0.035 倍字寬），也是上限
+const LYRICS_SPACING_MIN = -10;       // 負值＝字與字重疊
 const LYRICS_GAP_KEY = "hymnalLyricsParaGap";
 const LYRICS_GAP_MIN = 0;
 const LYRICS_GAP_MAX = 2;
-let lyricsSpacingRatio = 1;
+let lyricsSpacingValue = LYRICS_SPACING_DEFAULT;
 let lyricsParaGap = 1;
 let displaySpacingSlider = null;
 let displaySpacingValue = null;
 let displayGapSlider = null;
 let displayGapValue = null;
 
-function applyLyricsSpacing(ratio) {
-  lyricsSpacingRatio = ratio;
+function applyLyricsSpacing(value) {
+  lyricsSpacingValue = value;
   document.documentElement.style.setProperty(
     "--lyrics-letter-spacing",
-    `${(ratio * LYRICS_SPACING_MAX_EM).toFixed(4)}em`
+    `${(value / 100).toFixed(4)}em`
   );
+}
+
+function formatLyricsSpacing(value) {
+  return (Math.round(value * 10) / 10).toFixed(1);
 }
 
 function applyLyricsParaGap(value) {
@@ -2508,8 +2514,9 @@ function applyLyricsParaGap(value) {
 
 function loadLyricsSpacingAndGap() {
   try {
-    const ratio = parseFloat(localStorage.getItem(LYRICS_SPACING_KEY));
-    if (ratio >= 0 && ratio <= 1) applyLyricsSpacing(ratio);
+    localStorage.removeItem(LYRICS_SPACING_OLD_KEY);
+    const spacing = parseFloat(localStorage.getItem(LYRICS_SPACING_KEY));
+    if (spacing >= LYRICS_SPACING_MIN && spacing <= LYRICS_SPACING_DEFAULT) applyLyricsSpacing(spacing);
     const gap = parseFloat(localStorage.getItem(LYRICS_GAP_KEY));
     if (gap >= LYRICS_GAP_MIN && gap <= LYRICS_GAP_MAX) applyLyricsParaGap(gap);
   } catch (error) { /* 忽略 */ }
@@ -2566,8 +2573,8 @@ function refreshDisplayPanel() {
   displayLineValue.textContent = (Math.round(line * 100) / 100).toFixed(2);
 
   if (displaySpacingSlider) {
-    displaySpacingSlider.value = String(lyricsSpacingRatio);
-    displaySpacingValue.textContent = `${Math.round(lyricsSpacingRatio * 100)}%`;
+    displaySpacingSlider.value = String(lyricsSpacingValue);
+    displaySpacingValue.textContent = formatLyricsSpacing(lyricsSpacingValue);
   }
   if (displayGapSlider) {
     displayGapSlider.value = String(lyricsParaGap);
@@ -2721,9 +2728,9 @@ function buildDisplayPanel() {
   displayLineSlider = lineSlider.input;
   displayLineValue = lineSlider.value;
 
-  const spacingSlider = makeSlider("字距", 0, 1, 0.05, (v, out) => {
+  const spacingSlider = makeSlider("字距", LYRICS_SPACING_MIN, LYRICS_SPACING_DEFAULT, 0.5, (v, out) => {
     applyLyricsSpacing(v);
-    out.textContent = `${Math.round(v * 100)}%`;
+    out.textContent = formatLyricsSpacing(v);
     try { localStorage.setItem(LYRICS_SPACING_KEY, String(v)); } catch (error) { /* 忽略 */ }
   });
   displaySpacingSlider = spacingSlider.input;
@@ -2746,7 +2753,7 @@ function buildDisplayPanel() {
     document.documentElement.style.removeProperty("--lyrics-line-height");
     document.documentElement.style.removeProperty("--lyrics-letter-spacing");
     document.documentElement.style.removeProperty("--lyrics-para-gap");
-    lyricsSpacingRatio = 1;
+    lyricsSpacingValue = LYRICS_SPACING_DEFAULT;
     lyricsParaGap = 1;
     try {
       localStorage.removeItem(LYRICS_LINE_KEY);
